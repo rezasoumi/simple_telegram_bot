@@ -1,0 +1,94 @@
+﻿{
+  "responseObject": {
+    "id": 0,
+    "stockAndWeights": [
+      {
+        "stock": {
+          "tickerKey": 200000,
+          "isin": "Not-Defined",
+          "tickerPooyaFa": "سپرده 20 درصد",
+          "tickerNamePooyaFa": "سپرده بانکی با نرخ سود 20 درصد",
+          "exchangeKey": 0,
+          "marketUnit": null,
+          "marketType": "اوراق مشارکت با سود ثابت"
+        },
+        "weight": 0.29790704003477375
+      },
+      {
+        "stock": {
+          "tickerKey": 1577,
+          "isin": "IRO3KHMZ0001",
+          "tickerPooyaFa": "میدکو",
+          "tickerNamePooyaFa": "هلدینگ صنایع معدنی خاورمیانه",
+          "exchangeKey": 2,
+          "marketUnit": null,
+          "marketType": "سهام فرابورس"
+        },
+        "weight": 0.28008110557841187
+      },
+      {
+        "stock": {
+          "tickerKey": 107627,
+          "isin": "IRT3FDKF0001",
+          "tickerPooyaFa": "فراز",
+          "tickerNamePooyaFa": "صندوق س.سهام فراز داریک-س",
+          "exchangeKey": 2,
+          "marketUnit": null,
+          "marketType": "صندوق قابل معامله"
+        },
+        "weight": 0.15597170319489284
+      },
+      {
+        "stock": {
+          "tickerKey": 83218,
+          "isin": "IRO1PARS0001",
+          "tickerPooyaFa": "پارس",
+          "tickerNamePooyaFa": "پتروشیمی پارس",
+          "exchangeKey": 1,
+          "marketUnit": null,
+          "marketType": "سهام بورس"
+        },
+        "weight": 0.0886257204621745
+      },
+      {
+        "stock": {
+          "tickerKey": 102971,
+          "isin": "IRO1TSAN0001",
+          "tickerPooyaFa": "امین",
+          "tickerNamePooyaFa": "تامین سرمایه امین",
+          "exchangeKey": 1,
+          "marketUnit": null,
+          "marketType": "سهام بورس"
+        },
+        "weight": 0.08428737706887429
+      },
+      {
+        "stock": {
+          "tickerKey": 101294,
+          "isin": "IRO1SITA0001",
+          "tickerPooyaFa": "سیتا",
+          "tickerNamePooyaFa": "سرمایه گذاری سیمان تامین",
+          "exchangeKey": 1,
+          "marketUnit": null,
+          "marketType": "سهام بورس"
+        },
+        "weight": 0.060810823401485484
+      },
+      {
+        "stock": {
+          "tickerKey": 4734,
+          "isin": "IRO1DTIP0001",
+          "tickerPooyaFa": "تیپیکو",
+          "tickerNamePooyaFa": "سرمایه گذاری دارویی تامین",
+          "exchangeKey": 1,
+          "marketUnit": null,
+          "marketType": "سهام بورس"
+        },
+        "weight": 0.032316230259387554
+      }
+    ]
+  },
+  "isSuccessful": true,
+  "errorMessageFa": "",
+  "errorMessage": ""
+}

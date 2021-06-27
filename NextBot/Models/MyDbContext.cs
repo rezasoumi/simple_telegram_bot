@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static NextBot.Models.IndustryStocks;
 
 namespace NextBot.Models
 {
@@ -16,11 +15,9 @@ namespace NextBot.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+
         }
 
-        public DbSet<Industry> Industries { get; set; }
-        public DbSet<Stock> Stocks { get; set; }
-
+        public DbSet<Person> People { get; set; }
     }
 }
