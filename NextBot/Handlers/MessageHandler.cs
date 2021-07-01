@@ -1,14 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using NextBot.Models;
 using NextBot.SmartSearch;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
@@ -19,9 +18,9 @@ namespace NextBot.Handlers
     public class MessageHandler
     {
         private readonly MyDbContext _context;
-        private static WebProxy proxy = new WebProxy("https://t.me/proxy?server=194.5.193.32&port=443&secret=ee0dc65c949cdcc6b4a70d61db96e9e8367777772e636c6f7564666c6172652e636f6d");
+        //private static WebProxy proxy = new WebProxy("https://t.me/proxy?server=194.5.193.32&port=443&secret=ee0dc65c949cdcc6b4a70d61db96e9e8367777772e636c6f7564666c6172652e636f6d");
         public static readonly TelegramBotClient Bot =
-            new TelegramBotClient("1634983005:AAHLfFThddFbjkOZAVWK84w1afJePX1Mo8Y", proxy);
+            new TelegramBotClient("1634983005:AAHLfFThddFbjkOZAVWK84w1afJePX1Mo8Y");
 
         private static readonly HttpClient client = new HttpClient();
 
@@ -40,7 +39,7 @@ namespace NextBot.Handlers
             },
             resizeKeyboard: true
         );
-        
+
         private static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup2 = new ReplyKeyboardMarkup(
             new KeyboardButton[][]
             {
@@ -49,7 +48,7 @@ namespace NextBot.Handlers
             },
             resizeKeyboard: true
         );
-        
+
         private static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup3 = new ReplyKeyboardMarkup(
             new KeyboardButton[][]
             {
@@ -58,7 +57,7 @@ namespace NextBot.Handlers
             },
             resizeKeyboard: true
         );
-        
+
         private static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup4 = new ReplyKeyboardMarkup(
             new KeyboardButton[][]
             {
@@ -67,7 +66,7 @@ namespace NextBot.Handlers
             },
             resizeKeyboard: true
         );
-        
+
         private static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup5 = new ReplyKeyboardMarkup(
             new KeyboardButton[][]
             {
@@ -136,22 +135,22 @@ namespace NextBot.Handlers
                 {
                     case "سهام":
                         person.State = 1;
-                        SendMessage(message, "send your stock name:", ReplyKeyboardMarkup1);
+                        SendMessage(message, "نام سهم مورد نظر را وارد کنید :", ReplyKeyboardMarkup1);
                         break;
                     case "صنعت":
                         person.State = 2;
-                        SendMessage(message, "send your industry name:", ReplyKeyboardMarkup1);
+                        SendMessage(message, "نام صنعت مورد نظر را وارد کنید :", ReplyKeyboardMarkup1);
                         break;
                     case "پرتفوی مرکب":
                         person.State = 3;
-                        SendMessage(message, "choose:", ReplyKeyboardMarkup2);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup2);
                         break;
                     case "پرتفوی":
                         person.State = 4;
-                        SendMessage(message, "choose:", ReplyKeyboardMarkup2);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup2);
                         break;
                     default:
-                        SendMessage(message, "ar", ReplyKeyboardMarkup1);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup0);
                         break;
                 }
             }
@@ -172,13 +171,13 @@ namespace NextBot.Handlers
                         symbols.Add(stock.Symbol);
                     }
                 }
-                
+
                 var smartDictionary = new SmartDDictionary<string>(m => m, symbols);
 
                 var buttons = smartDictionary.Search(message.Text, 10).Select(x => new[] { new KeyboardButton(x) }).ToArray();
 
                 person.State = 5;
-                SendMessage(message, "enter stock you want ...", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
+                SendMessage(message, "سهم مورد نظر را از گزینه های موجود انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
             }
             else if (person.State == 2)
             {
@@ -188,7 +187,7 @@ namespace NextBot.Handlers
                 //StreamReader r = new StreamReader("json.json");
                 //string json = r.ReadToEnd();
                 //var industries = JsonConvert.DeserializeObject<List<IndustryStocks.Industry>>(json);
-                
+
                 var industriesName = new List<String>();
                 foreach (var industry in industries)
                 {
@@ -200,11 +199,11 @@ namespace NextBot.Handlers
                 var buttons = smartDictionary.Search(message.Text, 10).Select(x => new[] { new KeyboardButton(x) }).ToArray();
 
                 person.State = 6;
-                SendMessage(message, "enter stock you want ...", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
+                SendMessage(message, "صنعت مورد نظر را از گزینه های موجود انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
             }
             else if (person.State == 3)
             {
-                
+
             }
             else if (person.State == 4)
             {
@@ -212,29 +211,29 @@ namespace NextBot.Handlers
                 {
                     case "تشکیل":
                         person.State = 7;
-                        SendMessage(message, "choose:", ReplyKeyboardMarkup3);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup3);
                         break;
                     case "انتخاب":
 
                         break;
                     case "بازگشت":
                         person.State = 0;
-                        SendMessage(message, "choose:", ReplyKeyboardMarkup0);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup0);
                         break;
                     default:
-                        SendMessage(message, "you say sth wrong try again", ReplyKeyboardMarkup2);
+                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", ReplyKeyboardMarkup2);
                         break;
                 }
             }
             else if (person.State == 5)
             {
                 person.State = 0;
-                SendMessage(message, "has not implemented yet... choose:", ReplyKeyboardMarkup0);
+                SendMessage(message, "هنوز پیاده سازی نشده است ... ازگزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup0);
             }
             else if (person.State == 6)
             {
                 person.State = 0;
-                SendMessage(message, "has not implemented yet... choose:", ReplyKeyboardMarkup0);
+                SendMessage(message, "هنوز پیاده سازی نشده است ... ازگزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup0);
             }
             else if (person.State == 7)
             {
@@ -242,17 +241,17 @@ namespace NextBot.Handlers
                 {
                     case "هوشمند":
                         person.State = 8;
-                        SendMessage(message, "choose:", ReplyKeyboardMarkup4);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup4);
                         break;
                     case "دستی":
 
                         break;
                     case "بازگشت":
                         person.State = 4;
-                        SendMessage(message, "choose:", ReplyKeyboardMarkup2);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup2);
                         break;
                     default:
-                        SendMessage(message, "you say sth wrong try again", ReplyKeyboardMarkup3);
+                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", ReplyKeyboardMarkup3);
                         break;
                 }
             }
@@ -262,23 +261,20 @@ namespace NextBot.Handlers
                 {
                     case "ساخت":
                         //call api 
-                        //StreamReader r = new StreamReader("json1.json");
-                        //string json = r.ReadToEnd();
-                        //var root = JsonConvert.DeserializeObject<RootObject>(json);
-
+                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض ...", ReplyKeyboardMarkup1);
                         var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio");
-                        await SendClassicNextPortfolioToUser(message, streamTask);
+                        await SendClassicNextPortfolioToUser(message, streamTask, false);
                         break;
                     case "تنظیمات":
                         person.State = 9;
-                        SendMessage(message, "choose your risk rate:", ReplyKeyboardMarkup5);
+                        SendMessage(message, "میزان ریسک خود را از بین گزینه های موجود انتخاب کنید :", ReplyKeyboardMarkup5);
                         break;
                     case "بازگشت":
                         person.State = 7;
-                        SendMessage(message, "choose:", ReplyKeyboardMarkup3);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup3);
                         break;
                     default:
-                        SendMessage(message, "you say sth wrong try again", ReplyKeyboardMarkup4);
+                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", ReplyKeyboardMarkup4);
                         break;
                 }
             }
@@ -308,22 +304,22 @@ namespace NextBot.Handlers
                     case "بازگشت":
                         valid = false;
                         person.State = 8;
-                        SendMessage(message, "choose:", ReplyKeyboardMarkup4);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup4);
                         break;
                     default:
                         valid = false;
-                        SendMessage(message, "you say sth wrong try again", ReplyKeyboardMarkup5);
+                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", ReplyKeyboardMarkup5);
                         break;
                 }
                 if (valid)
                 {
                     person.State = 10;
-                    SendMessage(message, "choose:", ReplyKeyboardMarkup6);
+                    SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup6);
                 }
             }
             else if (person.State == 10)
             {
-                CreateOrEditMoreSetting(person, message, "send a number for minimum stock weight between 0.01 and 1: (send english digit)", 11);
+                CreateOrEditMoreSetting(person, message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را یه انگلیسی وارد کنید)", 10);
             }
             else if (person.State == 11)
             {
@@ -331,7 +327,7 @@ namespace NextBot.Handlers
             }
             else if (person.State == 12)
             {
-                CreateOrEditMoreSetting(person, message, "send a number for maximum stock weight between 0.05 and 1: (send english digit)", 13);
+                CreateOrEditMoreSetting(person, message, "یک عدد به عنوان حداکثر وزن سهام ها بین 0.05 و 1 وارد کنید: (عدد را یه انگلیسی وارد کنید)", 12);
             }
             else if (person.State == 13)
             {
@@ -339,19 +335,19 @@ namespace NextBot.Handlers
             }
             else if (person.State == 14)
             {
-                CreateOrEditMoreSetting(person, message, "send your production date between 13990101 to current-date ( format -> 13990721 ) if you send future date :", 15);
+                CreateOrEditMoreSetting(person, message, "تاریخ ساخت خود را به شمسی که بین 13990101 و تاریخ حال حاضر است وارد کنید: (فرمت مورد نظر برای مثال:13990701)", 14);
             }
             else if (person.State == 15)
             {
-                if (message.Text.Length == 8 && int.Parse(message.Text) > 139900101)
+                if (message.Text.Length == 8 && int.Parse(message.Text) > 13990101)
                 {
                     person.SmartPortfolioSetting.ProductionDate = message.Text;
                     person.State = 16;
-                    SendMessage(message, "choose:", ReplyKeyboardMarkup7);
+                    SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup7);
                 }
                 else
                 {
-                    SendMessage(message, "please send a valid date.", ReplyKeyboardMarkup1);
+                    SendMessage(message, "لطفا یک تاریخ معتبر وارد کنید.", ReplyKeyboardMarkup1);
                 }
             }
             else if (person.State == 16)
@@ -360,11 +356,20 @@ namespace NextBot.Handlers
                 {
                     case "ساخت":
                         // call api with all manuall settings
+                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل و حداکثر وزن سهام و تاریخ شمسی مشخص ...", ReplyKeyboardMarkup1);
                         var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/false/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}/{person.SmartPortfolioSetting.ProductionDate}");
-                        await SendClassicNextPortfolioToUser(message, streamTask);
+                        await SendClassicNextPortfolioToUser(message, streamTask, false);
+                        break;
+                    case "تنظیمات":
+                        person.State = 9;
+                        SendMessage(message, "میزان ریسک خود را از بین گزینه های موجود انتخاب کنید :", ReplyKeyboardMarkup5);
+                        break;
+                    case "بازگشت":
+                        person.State = 15;
+                        SendMessage(message, "تاریخ ساخت خود را به شمسی که بین 13990101 و تاریخ حال حاضر است وارد کنید: (فرمت مورد نظر برای مثال:13990701)", ReplyKeyboardMarkup1);
                         break;
                     default:
-                        SendMessage(message, "you say sth wrong try again", ReplyKeyboardMarkup6);
+                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", ReplyKeyboardMarkup6);
                         break;
                 }
             }
@@ -384,51 +389,62 @@ namespace NextBot.Handlers
                     System.Threading.Tasks.Task<Stream> streamTask = null;
 
                     if (state == 10)
-                        //streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/false/{person.SmartPortfolioSetting.RiskRate}");
+                    {
+                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک مشخص ...", ReplyKeyboardMarkup1);
+                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/false/{person.SmartPortfolioSetting.RiskRate}");
+                    }
                     if (state == 12)
-                        //streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/false/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}");
+                    {
+                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل وزن سهام مشخص ...", ReplyKeyboardMarkup1);
+                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/false/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}");
+                    }
                     if (state == 14)
-                        //streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/false/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}");
-
-                    //StreamReader r = new StreamReader("json1.json");
-                    //string json = r.ReadToEnd();
-                    //var root = JsonConvert.DeserializeObject<RootObject>(json);
-
-                    await SendClassicNextPortfolioToUser(message, streamTask);
+                    {
+                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل و حداکثر وزن سهام مشخص ...", ReplyKeyboardMarkup1);
+                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/false/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}");
+                    }
+                    await SendClassicNextPortfolioToUser(message, streamTask, true);
 
                     break;
                 case "تنظیمات بیشتر":
-                    person.State = state;
+                    person.State = (state + 1);
                     SendMessage(message, moreSettingsMessage, ReplyKeyboardMarkup1);
                     break;
                 case "بازگشت":
                     person.State = 9;
-                    SendMessage(message, "choose your risk rate:", ReplyKeyboardMarkup5);
+                    SendMessage(message, "میزان ریسک خود را از بین گزینه های موجود انتخاب کنید :", ReplyKeyboardMarkup5);
                     break;
                 default:
-                    SendMessage(message, "you say sth wrong try again", ReplyKeyboardMarkup6);
+                    SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", ReplyKeyboardMarkup6);
                     break;
             }
         }
 
-        private static async System.Threading.Tasks.Task SendClassicNextPortfolioToUser(Message message, System.Threading.Tasks.Task<Stream> streamTask)
+        private static async System.Threading.Tasks.Task SendClassicNextPortfolioToUser(Message message, System.Threading.Tasks.Task<Stream> streamTask, bool moreSettings)
         {
             var root = await System.Text.Json.JsonSerializer.DeserializeAsync<RootObject>(await streamTask);
 
             if (root.IsSuccessful)
             {
-                foreach (var item in root.ResponseObject.StockAndWeights)
+                StringBuilder str = new StringBuilder();
+                for (int i = 0; i < root.ResponseObject.StockAndWeights.Length; i++)
                 {
-                    StringBuilder str = new StringBuilder();
-                    str.Append("tickerKey: " + item.Stock.TickerKey.ToString() + "\n");
-                    str.Append("isin: " + item.Stock.Isin + "\n");
+                    var item = root.ResponseObject.StockAndWeights.ElementAt(i);
+                    str.Append($"number {i + 1} :\n");
                     str.Append("tickerPooyaFa: " + item.Stock.TickerPooyaFa + "\n");
                     str.Append("tickerNamePooyaFa: " + item.Stock.TickerNamePooyaFa + "\n");
-                    str.Append("exchangeKey: " + item.Stock.ExchangeKey.ToString() + "\n");
                     str.Append("marketType: " + item.Stock.MarketType + "\n");
-                    str.Append("weight: " + item.Weight.ToString() + "\n");
-                    SendMessageWithoutReply(message, str.ToString(), ReplyKeyboardMarkup1);
-                    SendMessageWithoutReply(message, "choose: ", ReplyKeyboardMarkup4);
+                    str.Append("weight: " + Math.Round(item.Weight * 100, 2) + " %\n\n");
+                }
+                SendMessageWithoutReply(message, str.ToString(), ReplyKeyboardMarkup1);
+                Thread.Sleep(500);
+                if (!moreSettings)
+                {
+                    SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup4);
+                }
+                else
+                {
+                    SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup6);
                 }
             }
             else
@@ -444,12 +460,12 @@ namespace NextBot.Handlers
                 bool check;
                 if (max)
                     check = double.Parse(message.Text) >= 0.05 && double.Parse(message.Text) <= 1;
-                else 
+                else
                     check = double.Parse(message.Text) >= 0.01 && double.Parse(message.Text) <= 1;
                 if (check)
                 {
-                    var state = (max) ? 12 : 14;
-                    var str = (max) ? "maximum stock weight change successfully." : "minimum stock weight change successfully.";
+                    var state = (max) ? 14 : 12;
+                    var str = (max) ? "حداکثر وزن سهام ها با موفقیت ثبت شد." : "حداقل وزن سهام ها با موفقیت ثبت شد.";
                     person.State = state;
 
                     if (max)
@@ -458,16 +474,16 @@ namespace NextBot.Handlers
                         person.SmartPortfolioSetting.MinimumStockWeight = double.Parse(message.Text);
 
                     SendMessage(message, str, ReplyKeyboardMarkup1);
-                    SendMessage(message, "choose:", ReplyKeyboardMarkup6);
+                    SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", ReplyKeyboardMarkup6);
                 }
                 else
                 {
-                    SendMessage(message, "please send a valid number.", ReplyKeyboardMarkup1);
+                    SendMessage(message, "لطفا یک عدد صحیح وارد کنید.", ReplyKeyboardMarkup1);
                 }
             }
             catch (Exception)
             {
-                SendMessage(message, "do not send persian number. switch your keyboard to english.", ReplyKeyboardMarkup1);
+                SendMessage(message, "لطفا یک عدد انگلیسی وارد کنید.", ReplyKeyboardMarkup1);
             }
         }
 
@@ -496,7 +512,7 @@ namespace NextBot.Handlers
                     replyMarkup: rkm
                 );
         }
-        
+
         private static async void SendMessageWithoutReply(Message message, string text, ReplyKeyboardMarkup rkm)
         {
             await Bot.SendTextMessageAsync(
