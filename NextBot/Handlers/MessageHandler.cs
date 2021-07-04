@@ -389,19 +389,19 @@ namespace NextBot.Handlers
             else if (person.State == 17)
             {
                 var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio/all");
-                var root = await System.Text.Json.JsonSerializer.DeserializeAsync<List<ClassicNextSelect.Rootobject>>(await streamTask);
+                var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.Rootobject>(await streamTask);
                 switch (message.Text)
                 {
                     case "بعدی":
                         
                         var list_0 = new List<string>();
                         list_0.Add("قبلی");
-                        for (long i = person.State; i <= Math.Min(10 + person.State, root.First().ResponseObject.Length - person.State); i++)
+                        for (long i = person.ClassicNextSelectState; i <= Math.Min(19 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
                         {
                             list_0.Add($"پرتفوی شماره {i}");
                         }
-                        person.State += 20;
-                        if (root.First().ResponseObject.Length - person.State > 0)
+                        person.ClassicNextSelectState += 20;
+                        if (root.ResponseObject.Length - person.ClassicNextSelectState > 0)
                         {
                             list_0.Add("بعدی");
                         }
@@ -410,38 +410,39 @@ namespace NextBot.Handlers
 
                         break;
                     case "قبلی":
-                        if (person.State == 21)
+                        if (person.ClassicNextSelectState == 21)
                         {
                             person.State = 4;
                             SendMessage(message, "از بین گزینه های زیر انتخاب کنید :", ReplyKeyboardMarkup2);
                             break;
                         }
-                        person.State -= 20;
+                        person.ClassicNextSelectState -= 40;
                         var list_1 = new List<string>();
 
-                        if (person.State != 1)
-                            list_1.Add("قبلی");
+                        //if (person.ClassicNextSelectState != 1)
+                        list_1.Add("قبلی");
 
-                        for (long i = person.State; i <= Math.Min(10 + person.State, root.First().ResponseObject.Length); i++)
+                        for (long i = person.ClassicNextSelectState; i <= Math.Min(19 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
                         {
                             list_1.Add($"پرتفوی شماره {i}");
                         }
                         list_1.Add("بعدی");
                         var buttons_1 = list_1.Select(x => new[] { new KeyboardButton(x) }).ToArray();
                         SendMessage(message, "پرتفوی مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons_1, resizeKeyboard: true));
-
+                        person.ClassicNextSelectState += 20;
                         break;
                     default:
-                        var strNum = message.Text.Skip(13);
-                        var num = int.Parse(strNum.First().ToString());
+                        var split = message.Text.Split(" ");
+                        var strNum = split[2];
+                        var num = int.Parse(strNum.ToString());
                         var streamTask_ = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{num}");
-                        var root_ = await System.Text.Json.JsonSerializer.DeserializeAsync<List<ClassicNextSelect.Rootobject>>(await streamTask_);
+                        var root_ = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask_);
 
                         StringBuilder str = new StringBuilder();
                         
-                        str.Append($"id : {root_.First().ResponseObject.First().Id}");
-                        str.Append("birthday : " + root_.First().ResponseObject.First().Birthday + "\n");
-                        str.Append("persian birthday : " + root_.First().ResponseObject.First().BirthdayPersian + "\n");
+                        str.Append($"id : {root_.ResponseObject.Id}\n");
+                        str.Append("birthday : " + root_.ResponseObject.Birthday + "\n");
+                        str.Append("persian birthday : " + root_.ResponseObject.BirthdayPersian + "\n");
                         
                         SendMessageWithoutReply(message, str.ToString(), ReplyKeyboardMarkup1);
                         Thread.Sleep(500);
@@ -463,24 +464,8 @@ namespace NextBot.Handlers
                         SendMessage(message, "bazdehi", ReplyKeyboardMarkup8);
                         break;
                     case "بازگشت":
-                        person.State = 17;
-                        var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio/all");
-                        var root = await System.Text.Json.JsonSerializer.DeserializeAsync<List<ClassicNextSelect.Rootobject>>(await streamTask);
-                        person.ClassicNextSelectState = 1;
-                        var list = new List<string>();
-                        list.Add("قبلی");
-                        for (int i = 1; i <= Math.Min(10, root.First().ResponseObject.Length); i++)
-                        {
-                            list.Add($"پرتفوی شماره {i}");
-                        }
-                        person.State += 20;
-                        if (root.First().ResponseObject.Length - person.State > 0)
-                        {
-                            list.Add("بعدی");
-                        }
-                        var buttons = list.Select(x => new[] { new KeyboardButton(x) }).ToArray();
-
-                        SendMessage(message, "پرتفوی مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
+                        person.State = 4;
+                        SendMessage(message, "از بین گزینه های زیر انتخاب کنید :", ReplyKeyboardMarkup2);
                         break;
                     default:
                         SendMessage(message, "چرت نگو", ReplyKeyboardMarkup8);
@@ -491,13 +476,13 @@ namespace NextBot.Handlers
             {
                 var num = int.Parse(message.Text.Trim());
                 var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{num}");
-                var root = await System.Text.Json.JsonSerializer.DeserializeAsync<List<ClassicNextSelect.Rootobject>>(await streamTask);
+                var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask);
 
                 StringBuilder str = new StringBuilder();
 
-                str.Append($"id : {root.First().ResponseObject.First().Id}");
-                str.Append("birthday : " + root.First().ResponseObject.First().Birthday + "\n");
-                str.Append("persian birthday : " + root.First().ResponseObject.First().BirthdayPersian + "\n");
+                str.Append($"id : {root.ResponseObject.Id}\n");
+                str.Append("birthday : " + root.ResponseObject.Birthday + "\n");
+                str.Append("persian birthday : " + root.ResponseObject.BirthdayPersian + "\n");
 
                 SendMessageWithoutReply(message, str.ToString(), ReplyKeyboardMarkup1);
                 Thread.Sleep(500);
@@ -518,17 +503,17 @@ namespace NextBot.Handlers
                     case "انتخاب بر اساس گذر میان پرتفوی ها":
                         person.State = 17;
                         var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio/all");
-                        var root = await System.Text.Json.JsonSerializer.DeserializeAsync<List<ClassicNextSelect.Rootobject>>(await streamTask);
+                        var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.Rootobject>(await streamTask);
 
                         person.ClassicNextSelectState = 1;
                         var list = new List<string>();
                         list.Add("قبلی");
-                        for (int i = 1; i <= Math.Min(10, root.First().ResponseObject.Length); i++)
+                        for (int i = 1; i <= Math.Min(20, root.ResponseObject.Length); i++)
                         {
                             list.Add($"پرتفوی شماره {i}");
                         }
-                        person.State += 20;
-                        if (root.First().ResponseObject.Length - person.State > 0)
+                        person.ClassicNextSelectState += 20;
+                        if (root.ResponseObject.Length - person.State > 0)
                         {
                             list.Add("بعدی");
                         }

@@ -13,8 +13,8 @@ namespace NextBot.Models
             public DateTime Birthday { get; set; }
             [JsonPropertyName("birthdayPersian")]
             public string BirthdayPersian { get; set; }
-            [JsonPropertyName("stockAndWeight")]
-            public object[] StockAndWeights { get; set; }
+            [JsonPropertyName("stockAndWeights")]
+            public ClassicNextFormation.Stockandweight[] StockAndWeights { get; set; }
         }
     }
 }
