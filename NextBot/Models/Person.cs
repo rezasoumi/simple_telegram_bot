@@ -17,5 +17,8 @@ namespace NextBot.Models
         public long ChatId { get; set; }
         public long State { get; set; }
         public SmartPortfolioSetting SmartPortfolioSetting { get; set; }
+        public long ClassicNextSelectState { get; set; } // can be 1/11/21/31/...
+        public long PorfolioIdForClassicNextSelect { get; set; }
+
     }
 }
