@@ -42,15 +42,6 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup4 = new(
-            new KeyboardButton[][]
-            {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "تنظیمات", "ساخت + ذخیره پرتفوی", "ساخت" },
-            },
-            resizeKeyboard: true
-        );
-
         public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup5 = new(
             new KeyboardButton[][]
             {
@@ -58,23 +49,6 @@ namespace NextBot.Handlers
                     new KeyboardButton[] { "ریسک زیاد", "ریسک خیلی کم" },
                     new KeyboardButton[] { "ریسک خیلی زیاد", "ریسک کم" },
                     new KeyboardButton[] { "بازگشت" },
-            },
-            resizeKeyboard: true
-        );
-
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup6 = new(
-            new KeyboardButton[][]
-            {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "تنظیمات بیشتر" , "ساخت + ذخیره پرتفوی", "ساخت" },
-            },
-            resizeKeyboard: true
-        );
-
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup7 = new(
-            new KeyboardButton[][]
-            {
-                    new KeyboardButton[] { "بازگشت", "ساخت + ذخیره پرتفوی", "ساخت" },
             },
             resizeKeyboard: true
         );
@@ -120,6 +94,18 @@ namespace NextBot.Handlers
             {
                     new KeyboardButton[] { "بازگشت" },
                     new KeyboardButton[] { "بازدهی شاخص تا امروز", "بازدهی شاخص تا تاریخ دلخواه" },
+            },
+            resizeKeyboard: true
+        );  
+        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup13 = new(
+            new KeyboardButton[][]
+            {
+                    new KeyboardButton[] { "بازگشت" },
+                    new KeyboardButton[] { "ساخت با پارامتر های پیش فرض" },
+                    new KeyboardButton[] { "ساخت با ریسک مشخص" },
+                    new KeyboardButton[] { "ساخت با ریسک و حداقل وزن مشخص" },
+                    new KeyboardButton[] { "ساخت با ریسک و حداقل و حداکثر وزن مشخص" },
+                    new KeyboardButton[] { "ساخت با ریسک و حداقل و حداکثر و تاریخ شمسی مشخص" },
             },
             resizeKeyboard: true
         );

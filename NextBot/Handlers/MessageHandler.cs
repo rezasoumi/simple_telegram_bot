@@ -162,7 +162,7 @@ namespace NextBot.Handlers
                 {
                     case "هوشمند":
                         person.State = 8;
-                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup4);
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup13);
                         break;
                     case "دستی":
                         //TODO
@@ -180,126 +180,155 @@ namespace NextBot.Handlers
             {
                 switch (message.Text)
                 {
-                    case "ساخت":
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض ...", Markup.ReplyKeyboardMarkup1);
-                        var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio/create/smart");
-                        await SendClassicNextPortfolioToUser(message, streamTask, false);
+                    case "ساخت با پارامتر های پیش فرض":
+                        person.State = 10;
+                        person.GetSave = false;
+                        InlineKeyboardMarkup inlineKeyboard_0 = new(new InlineKeyboardButton[][]
+                        {
+                            new InlineKeyboardButton[]{
+                                InlineKeyboardButton.WithCallbackData("بلی", "بلی"),
+                                InlineKeyboardButton.WithCallbackData("خیر", "خیر"),
+                            },
+                        });
+                        SendMessage(message, "پرتفوی مورد نظر ذخیره شود ؟", inlineKeyboard_0);
                         break;
-                    case "ساخت + ذخیره پرتفوی":
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض به همراه ذخیره سازی پرتفوی ...", Markup.ReplyKeyboardMarkup1);
-                        var streamTask_ = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/true");
-                        await SendClassicNextPortfolioToUser(message, streamTask_, false);
+                    case "ساخت با ریسک مشخص":
+                        person.State = 11;
+                        person.GetSave = false;
+                        person.GetRisk = false;
+                        InlineKeyboardMarkup inlineKeyboard_1 = new(new InlineKeyboardButton[][]
+                        {
+                            new InlineKeyboardButton[]{
+                                InlineKeyboardButton.WithCallbackData("بلی", "بلی"),
+                                InlineKeyboardButton.WithCallbackData("خیر", "خیر"),
+                            },
+                        });
+                        SendMessage(message, "پرتفوی مورد نظر ذخیره شود ؟", inlineKeyboard_1);
                         break;
-                    case "تنظیمات":
-                        person.State = 9;
-                        SendMessage(message, "میزان ریسک خود را از بین گزینه های موجود انتخاب کنید :", Markup.ReplyKeyboardMarkup5);
+                    case "ساخت با ریسک و حداقل وزن مشخص":
+                        person.GetSave = false;
+                        person.GetRisk = false;
+                        person.GetMinimumStockWeight = false;
+                        person.State = 13;
+                        InlineKeyboardMarkup inlineKeyboard_2 = new(new InlineKeyboardButton[][]
+                        {
+                            new InlineKeyboardButton[]{
+                                InlineKeyboardButton.WithCallbackData("بلی", "بلی"),
+                                InlineKeyboardButton.WithCallbackData("خیر", "خیر"),
+                            },
+                        });
+                        SendMessage(message, "پرتفوی مورد نظر ذخیره شود ؟", inlineKeyboard_2);
+                        break;
+                    case "ساخت با ریسک و حداقل و حداکثر وزن مشخص":
+                        person.State = 14;
+                        person.GetRisk = false;
+                        person.GetMinimumStockWeight = false;
+                        person.GetMaximumStockWeight = false;
+                        InlineKeyboardMarkup inlineKeyboard_3 = new(new InlineKeyboardButton[][]
+                        {
+                            new InlineKeyboardButton[]{
+                                InlineKeyboardButton.WithCallbackData("بلی", "بلی"),
+                                InlineKeyboardButton.WithCallbackData("خیر", "خیر"),
+                            },
+                        });
+                        SendMessage(message, "پرتفوی مورد نظر ذخیره شود ؟", inlineKeyboard_3);
+                        break;
+                    case "ساخت با ریسک و حداقل و حداکثر و تاریخ شمسی مشخص":
+                        person.State = 15;
+                        person.GetRisk = false;
+                        person.GetMinimumStockWeight = false;
+                        person.GetMaximumStockWeight = false;
+                        person.GetDate = false;
+                        InlineKeyboardMarkup inlineKeyboard_4 = new(new InlineKeyboardButton[][]
+                        {
+                            new InlineKeyboardButton[]{
+                                InlineKeyboardButton.WithCallbackData("بلی", "بلی"),
+                                InlineKeyboardButton.WithCallbackData("خیر", "خیر"),
+                            },
+                        });
+                        SendMessage(message, "پرتفوی مورد نظر ذخیره شود ؟", inlineKeyboard_4);
                         break;
                     case "بازگشت":
                         person.State = 7;
                         SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup3);
                         break;
                     default:
-                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", Markup.ReplyKeyboardMarkup4);
+                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", Markup.ReplyKeyboardMarkup13);
                         break;
-                }
-            }
-            else if (person.State == 9)
-            {
-                var valid = true;
-                switch (message.Text)
-                {
-                    case "بدون ریسک":
-                        SetRiskRate(person, 0);
-                        break;
-                    case "ریسک خیلی کم":
-                        SetRiskRate(person, 1);
-                        break;
-                    case "ریسک کم":
-                        SetRiskRate(person, 2);
-                        break;
-                    case "ریسک متوسط":
-                        SetRiskRate(person, 3);
-                        break;
-                    case "ریسک زیاد":
-                        SetRiskRate(person, 4);
-                        break;
-                    case "ریسک خیلی زیاد":
-                        SetRiskRate(person, 5);
-                        break;
-                    case "بازگشت":
-                        valid = false;
-                        person.State = 8;
-                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup4);
-                        break;
-                    default:
-                        valid = false;
-                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", Markup.ReplyKeyboardMarkup5);
-                        break;
-                }
-                if (valid)
-                {
-                    person.State = 10;
-                    SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup6);
                 }
             }
             else if (person.State == 10)
             {
-                CreateOrEditMoreSetting(person, message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را یه انگلیسی وارد کنید)", 10);
+                if (!person.GetSave)
+                {
+                    SendMessageWithoutReply(message, "شما هنوز سوال < پرتفوی مورد نظر ذخیره شود ؟ > را پاسخ نداده اید", Markup.ReplyKeyboardMarkup1);
+                }
             }
             else if (person.State == 11)
             {
-                TakeMaxStockWeight(person, message, false);
-            }
-            else if (person.State == 12)
-            {
-                CreateOrEditMoreSetting(person, message, "یک عدد به عنوان حداکثر وزن سهام ها بین 0.05 و 1 وارد کنید: (عدد را یه انگلیسی وارد کنید)", 12);
+                if (!person.GetSave || !person.GetRisk)
+                {
+                    SendMessageWithoutReply(message, "لطفا ریسک خود و امکان ذخیره سازی را ابتدا انتخاب کنید", Markup.ReplyKeyboardMarkup1);
+                }
             }
             else if (person.State == 13)
             {
-                TakeMaxStockWeight(person, message, true);
+                if (!person.GetSave || !person.GetRisk)
+                {
+                    SendMessageWithoutReply(message, "لطفا ریسک خود و امکان ذخیره سازی را ابتدا انتخاب کنید", Markup.ReplyKeyboardMarkup1);
+                }
+                else if (person.GetSave && person.GetRisk && !person.GetMinimumStockWeight)
+                {
+                    if (GetMinimumStockWeight(person, message))
+                        SendSmartPortfolioToUser(person, message, 2);
+                }
             }
             else if (person.State == 14)
             {
-                CreateOrEditMoreSetting(person, message, "تاریخ ساخت خود را به شمسی که بین 13990101 و تاریخ حال حاضر است وارد کنید: (فرمت مورد نظر برای مثال:13990701)", 14);
+                if (!person.GetSave || !person.GetRisk)
+                {
+                    SendMessageWithoutReply(message, "لطفا ریسک خود و امکان ذخیره سازی را ابتدا انتخاب کنید", Markup.ReplyKeyboardMarkup1);
+                }
+                else if (person.GetSave && person.GetRisk && !person.GetMinimumStockWeight)
+                {
+                    if (GetMinimumStockWeight(person, message))
+                    {
+                        SendMessage(message, "یک عدد به عنوان حداکثر وزن سهام ها بین 0.05 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
+                        person.GetMinimumStockWeight = true;
+                    }
+                }
+                else if (person.GetSave && person.GetRisk && person.GetMinimumStockWeight && !person.GetMaximumStockWeight)
+                {
+                    if (GetMaximumStockWeight(person, message))
+                        SendSmartPortfolioToUser(person, message, 3);
+                }
             }
             else if (person.State == 15)
             {
-                if (message.Text.Length == 8 && int.Parse(message.Text) > 13990101)
+                if (!person.GetSave || !person.GetRisk)
                 {
-                    person.SmartPortfolioSetting.ProductionDate = message.Text;
-                    person.State = 16;
-                    SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup7);
+                    SendMessageWithoutReply(message, "لطفا ریسک خود و امکان ذخیره سازی را ابتدا انتخاب کنید", Markup.ReplyKeyboardMarkup1);
                 }
-                else
+                else if (person.GetSave && person.GetRisk && !person.GetMinimumStockWeight)
                 {
-                    SendMessage(message, "لطفا یک تاریخ معتبر وارد کنید.", Markup.ReplyKeyboardMarkup1);
+                    if (GetMinimumStockWeight(person, message))
+                    {
+                        SendMessage(message, "یک عدد به عنوان حداکثر وزن سهام ها بین 0.05 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
+                        person.GetMinimumStockWeight = true;
+                    }
                 }
-            }
-            else if (person.State == 16)
-            {
-                switch (message.Text)
+                else if (person.GetSave && person.GetRisk && person.GetMinimumStockWeight && !person.GetMaximumStockWeight)
                 {
-                    case "ساخت":
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل و حداکثر وزن سهام و تاریخ شمسی مشخص ...", Markup.ReplyKeyboardMarkup1);
-                        var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/false/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}/{person.SmartPortfolioSetting.ProductionDate}");
-                        await SendClassicNextPortfolioToUser(message, streamTask, false);
-                        break;
-                    case "ساخت + ذخیره پرتفوی":
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل و حداکثر وزن سهام و تاریخ شمسی مشخص به همراه ذخیره سازی پرتفوی ...", Markup.ReplyKeyboardMarkup1);
-                        var streamTask_ = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/true/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}/{person.SmartPortfolioSetting.ProductionDate}");
-                        await SendClassicNextPortfolioToUser(message, streamTask_, false);
-                        break;
-                    case "تنظیمات":
-                        person.State = 9;
-                        SendMessage(message, "میزان ریسک خود را از بین گزینه های موجود انتخاب کنید :", Markup.ReplyKeyboardMarkup5);
-                        break;
-                    case "بازگشت":
-                        person.State = 15;
-                        SendMessage(message, "تاریخ ساخت خود را به شمسی که بین 13990101 و تاریخ حال حاضر است وارد کنید: (فرمت مورد نظر برای مثال:13990701)", Markup.ReplyKeyboardMarkup1);
-                        break;
-                    default:
-                        SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", Markup.ReplyKeyboardMarkup6);
-                        break;
+                    if (GetMaximumStockWeight(person, message))
+                    {
+                        SendMessageWithoutReply(message, "تاریخ ساخت خود را به شمسی که بین 13990101 و تاریخ حال حاضر است وارد کنید: (فرمت مورد نظر برای مثال:13990701)", Markup.ReplyKeyboardMarkup1);
+                        person.GetMaximumStockWeight = true;
+                    }
+                }
+                else if (person.GetSave && person.GetRisk && person.GetMinimumStockWeight && person.GetMaximumStockWeight && !person.GetDate)
+                {
+                    if (GetProductionDate(person, message))
+                        SendSmartPortfolioToUser(person, message, 4);
                 }
             }
             else if (person.State == 17)
@@ -382,7 +411,7 @@ namespace NextBot.Handlers
                         break;
                     case "بازدهی پرتفوی تا امروز":
                         var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PorfolioIdForClassicNextSelect}");
-                        await ShowReturnAndComparisonInClassicNextSelect(message, streamTask);
+                        await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask);
                         break;
                     case "بازگشت":
                         person.State = 18;
@@ -397,7 +426,7 @@ namespace NextBot.Handlers
                 if (message.Text.Length == 8)
                 {
                     var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PorfolioIdForClassicNextSelect}/{message.Text}");
-                    await ShowReturnAndComparisonInClassicNextSelect(message, streamTask);
+                    await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask);
                     person.State = 21;
                 }
                 else
@@ -449,7 +478,7 @@ namespace NextBot.Handlers
                 if (dates.Length == 2 && dates[0].Length == 8 && dates[1].Length == 8)
                 {
                     var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/stock/return/index/{dates[0]}/{dates[1]}");
-                    await ShowReturnAndComparisonInClassicNextSelect(message, streamTask);
+                    await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask);
                     person.State = 24;
                 }
                 else
@@ -460,7 +489,7 @@ namespace NextBot.Handlers
                 if (message.Text.Length == 8)
                 {
                     var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/stock/return/index/{message.Text}");
-                    await ShowReturnAndComparisonInClassicNextSelect(message, streamTask);
+                    await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask);
                     person.State = 24;
                 }
                 else
@@ -468,7 +497,63 @@ namespace NextBot.Handlers
             }
         }
 
-        private static async System.Threading.Tasks.Task ShowReturnAndComparisonInClassicNextSelect(Message message, System.Threading.Tasks.Task<Stream> streamTask)
+        private static bool GetProductionDate(Person person, Message message)
+        {
+            try
+            {
+                if (message.Text.Length == 8 && double.Parse(message.Text) > 13990101)
+                {
+                    person.SmartPortfolioSetting.ProductionDate = message.Text;
+                    return true;
+                }
+                else
+                    SendMessage(message, "لطفا یک عدد صحیح وارد نمایید :", Markup.ReplyKeyboardMarkup1);
+            }
+            catch (Exception)
+            {
+                SendMessage(message, "ورودی نامعتبر! لطفا دوباره تلاش کنید", Markup.ReplyKeyboardMarkup1);
+            }
+            return false;
+        }
+
+        private static bool GetMinimumStockWeight(Person person, Message message)
+        {
+            try
+            {
+                if (double.Parse(message.Text) > 0.01 && double.Parse(message.Text) < 1)
+                {
+                    person.SmartPortfolioSetting.MinimumStockWeight = double.Parse(message.Text);
+                    return true;
+                }
+                else
+                    SendMessage(message, "لطفا یک عدد صحیح وارد نمایید :", Markup.ReplyKeyboardMarkup1);
+            }
+            catch (Exception)
+            {
+                SendMessage(message, "ورودی نامعتبر! لطفا دوباره تلاش کنید", Markup.ReplyKeyboardMarkup1);
+            }
+            return false;
+        }
+        private static bool GetMaximumStockWeight(Person person, Message message)
+        {
+            try
+            {
+                if (double.Parse(message.Text) > 0.05 && double.Parse(message.Text) < 1)
+                {
+                    person.SmartPortfolioSetting.MaximumStockWeight = double.Parse(message.Text);
+                    return true;
+                }
+                else
+                    SendMessage(message, "لطفا یک عدد صحیح وارد نمایید :", Markup.ReplyKeyboardMarkup1);
+            }
+            catch (Exception)
+            {
+                SendMessage(message, "ورودی نامعتبر! لطفا دوباره تلاش کنید", Markup.ReplyKeyboardMarkup1);
+            }
+            return false;
+        }
+
+        private static async System.Threading.Tasks.Task ShowReturnAndComparisonInClassicNextSelect(Person person, Message message, System.Threading.Tasks.Task<Stream> streamTask)
         {
             var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
             
@@ -476,8 +561,11 @@ namespace NextBot.Handlers
                 SendMessage(message, $"response : {root.ResponseObject}", Markup.ReplyKeyboardMarkup1);
             else
                 SendMessage(message, root.ErrorMessageFa, Markup.ReplyKeyboardMarkup1);
-            
-            SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup10);
+            Thread.Sleep(500);
+            if (person.State == 25 || person.State == 26)
+                SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup12);
+            else
+                SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup10);
         }
 
         private static async System.Threading.Tasks.Task ShowSpecificPortfolioInClassicNextSelect(Person person, Message message, String strNumber)
@@ -498,7 +586,7 @@ namespace NextBot.Handlers
 
                     SendMessageWithoutReply(message, str.ToString(), Markup.ReplyKeyboardMarkup1);
                     Thread.Sleep(500);
-                    SendMessage(message, "از بین گزینه های زیر انتخاب کنید :", Markup.ReplyKeyboardMarkup8);
+                    SendMessageWithoutReply(message, "از بین گزینه های زیر انتخاب کنید :", Markup.ReplyKeyboardMarkup8);
 
                     person.State = 18;
                     person.PorfolioIdForClassicNextSelect = num;
@@ -538,129 +626,6 @@ namespace NextBot.Handlers
             SendMessage(message, "پرتفوی مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons_0, resizeKeyboard: true));
         }
 
-        private static void SetRiskRate(Person person, long rate)
-        {
-            person.SmartPortfolioSetting.RiskRate = rate;
-        }
-
-        private async static void CreateOrEditMoreSetting(Person person, Message message, string moreSettingsMessage, long state)
-        {
-            System.Threading.Tasks.Task<Stream> streamTask = null;
-
-            switch (message.Text)
-            {
-                case "ساخت":
-                    if (state == 10)
-                    {
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک مشخص ...", Markup.ReplyKeyboardMarkup1);
-                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/false/{person.SmartPortfolioSetting.RiskRate}");
-                    }
-                    if (state == 12)
-                    {
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل وزن سهام مشخص ...", Markup.ReplyKeyboardMarkup1);
-                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/false/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}");
-                    }
-                    if (state == 14)
-                    {
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل و حداکثر وزن سهام مشخص ...", Markup.ReplyKeyboardMarkup1);
-                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/false/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}");
-                    }
-                    await SendClassicNextPortfolioToUser(message, streamTask, true);
-                    break;
-                case "تنظیمات بیشتر":
-                    person.State = (state + 1);
-                    SendMessage(message, moreSettingsMessage, Markup.ReplyKeyboardMarkup1);
-                    break;
-                case "ساخت + ذخیره پرتفوی":
-                    if (state == 10)
-                    {
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک مشخص به همراه ذخیره پرتفوی ...", Markup.ReplyKeyboardMarkup1);
-                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/true/{person.SmartPortfolioSetting.RiskRate}");
-                    }
-                    if (state == 12)
-                    {
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل وزن سهام مشخص به همراه ذخیره پرتفوی ...", Markup.ReplyKeyboardMarkup1);
-                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/true/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}");
-                    }
-                    if (state == 14)
-                    {
-                        SendMessageWithoutReply(message, "ساخت پرتفوی هوشمند برای تاریخ امروز با پارامتر های پیش فرض و ریسک و حداقل و حداکثر وزن سهام مشخص به همراه ذخیره پرتفوی ...", Markup.ReplyKeyboardMarkup1);
-                        streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/true/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}");
-                    }
-                    await SendClassicNextPortfolioToUser(message, streamTask, true);
-                    break;
-                case "بازگشت":
-                    person.State = 9;
-                    SendMessage(message, "میزان ریسک خود را از بین گزینه های موجود انتخاب کنید :", Markup.ReplyKeyboardMarkup5);
-                    break;
-                default:
-                    SendMessage(message, "ورودی اشتباه ! لطفا دوباره تلاش کنید", Markup.ReplyKeyboardMarkup6);
-                    break;
-            }
-        }
-
-        private static async System.Threading.Tasks.Task SendClassicNextPortfolioToUser(Message message, System.Threading.Tasks.Task<Stream> streamTask, bool moreSettings)
-        {
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextFormation.RootObject>(await streamTask);
-
-            if (root.IsSuccessful)
-            {
-                StringBuilder str = new();
-                for (int i = 0; i < root.ResponseObject.StockAndWeights.Length; i++)
-                {
-                    var item = root.ResponseObject.StockAndWeights.ElementAt(i);
-                    str.Append($"number {i + 1} :\n");
-                    str.Append("tickerPooyaFa: " + item.Stock.TickerPooyaFa + "\n");
-                    str.Append("tickerNamePooyaFa: " + item.Stock.TickerNamePooyaFa + "\n");
-                    str.Append("marketType: " + item.Stock.MarketType + "\n");
-                    str.Append("weight: " + Math.Round(item.Weight * 100, 2) + " %\n\n");
-                }
-                SendMessageWithoutReply(message, str.ToString(), Markup.ReplyKeyboardMarkup1);
-                Thread.Sleep(500);
-                if (!moreSettings)
-                    SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup4);
-                else
-                    SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup6);
-            }
-            else
-            {
-                SendMessage(message, root.ErrorMessageFa, Markup.ReplyKeyboardMarkup4);
-            }
-        }
-
-        private static void TakeMaxStockWeight(Person person, Message message, bool max)
-        {
-            try
-            {
-                bool isCorrectRangeOfDigit;
-                if (max)
-                    isCorrectRangeOfDigit = double.Parse(message.Text) >= 0.05 && double.Parse(message.Text) <= 1;
-                else
-                    isCorrectRangeOfDigit = double.Parse(message.Text) >= 0.01 && double.Parse(message.Text) <= 1;
-                if (isCorrectRangeOfDigit)
-                {
-                    var state = (max) ? 14 : 12;
-                    var str = (max) ? "حداکثر وزن سهام ها با موفقیت ثبت شد." : "حداقل وزن سهام ها با موفقیت ثبت شد.";
-                    person.State = state;
-
-                    if (max)
-                        person.SmartPortfolioSetting.MaximumStockWeight = double.Parse(message.Text);
-                    else
-                        person.SmartPortfolioSetting.MinimumStockWeight = double.Parse(message.Text);
-
-                    SendMessage(message, str, Markup.ReplyKeyboardMarkup1);
-                    SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup6);
-                }
-                else
-                {
-                    SendMessage(message, "لطفا یک عدد صحیح وارد کنید.", Markup.ReplyKeyboardMarkup1);
-                }
-            }
-            catch (Exception)
-            {
-                SendMessage(message, "لطفا یک عدد انگلیسی وارد کنید.", Markup.ReplyKeyboardMarkup1);
-            }
-        }
 
         private void RegisterWithChatId(object sender, MessageEventArgs messageEventArgs)
         {
@@ -678,7 +643,7 @@ namespace NextBot.Handlers
             _context.SaveChanges();
         }
 
-        private static async void SendMessage(Message message, string text, ReplyKeyboardMarkup rkm)
+        private static async void SendMessage(Message message, string text, IReplyMarkup rkm)
         {
             await Bot.SendTextMessageAsync(
                     chatId: message.Chat.Id,
@@ -706,10 +671,164 @@ namespace NextBot.Handlers
         {
             throw new NotImplementedException();
         }
-
-        private void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs e)
+        
+        private async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
-            throw new NotImplementedException();
+            var person = _context.People.FirstOrDefault(p => p.ChatId == callbackQueryEventArgs.CallbackQuery.Message.Chat.Id);
+
+            var callbackQuery = callbackQueryEventArgs.CallbackQuery;
+            await Bot.AnswerCallbackQueryAsync(
+                callbackQueryId: callbackQuery.Id,
+                text: $"{callbackQueryEventArgs.CallbackQuery.Data} دریافت شد",
+                showAlert: false,
+                url: null
+            );
+
+            if (callbackQuery.Data.Equals("خیر"))
+            {
+                person.GetSave = true;
+                person.SmartPortfolioSetting.Save = false;
+
+                if (person.State == 10)
+                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 0);
+                if (person.State == 11 || person.State == 13 || person.State == 14 || person.State == 15)
+                    GetRiskByInlineKeyboard(callbackQueryEventArgs.CallbackQuery.Message);
+            }
+            else if (callbackQuery.Data.Equals("بلی"))
+            {
+                person.GetSave = true;
+                person.SmartPortfolioSetting.Save = true;
+
+                if (person.State == 10)
+                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 0);
+                if (person.State == 11 || person.State == 13 || person.State == 14 || person.State == 15)
+                    GetRiskByInlineKeyboard(callbackQueryEventArgs.CallbackQuery.Message);
+            }
+            else if (callbackQuery.Data.Equals("بدون ریسک"))
+            {
+                person.SmartPortfolioSetting.RiskRate = 0;
+                person.GetRisk = true;
+
+                if (person.State == 11)
+                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                if (person.State == 13 || person.State == 14 || person.State == 15)
+                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
+            }
+            else if (callbackQuery.Data.Equals("ریسک خیلی کم"))
+            {
+                person.SmartPortfolioSetting.RiskRate = 1;
+                person.GetRisk = true;
+
+                if (person.State == 11)
+                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                if (person.State == 13 || person.State == 14 || person.State == 15)
+                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
+            }
+            else if (callbackQuery.Data.Equals("ریسک کم"))
+            {
+                person.SmartPortfolioSetting.RiskRate = 2;
+                person.GetRisk = true;
+
+                if (person.State == 11)
+                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                if (person.State == 13 || person.State == 14 || person.State == 15)
+                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
+            }
+            else if (callbackQuery.Data.Equals("ریسک متوسط"))
+            {
+                person.SmartPortfolioSetting.RiskRate = 3;
+                person.GetRisk = true;
+
+                if (person.State == 11)
+                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                if (person.State == 13 || person.State == 14 || person.State == 15)
+                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
+            }
+            else if (callbackQuery.Data.Equals("ریسک زیاد"))
+            {
+                person.SmartPortfolioSetting.RiskRate = 4;
+                person.GetRisk = true;
+
+                if (person.State == 11)
+                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                if (person.State == 13 || person.State == 14 || person.State == 15)
+                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
+            }
+            else if (callbackQuery.Data.Equals("ریسک خیلی زیاد"))
+            {
+                person.SmartPortfolioSetting.RiskRate = 5;
+                person.GetRisk = true;
+
+                if (person.State == 11)
+                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                if (person.State == 13 || person.State == 14 || person.State == 15)
+                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
+            }
+        }
+
+        private static void GetRiskByInlineKeyboard(Message message)
+        {
+            InlineKeyboardMarkup inlineKeyboard = new(new InlineKeyboardButton[][]
+                {
+                    new InlineKeyboardButton[]{
+                        InlineKeyboardButton.WithCallbackData("ریسک متوسط", "ریسک متوسط"),
+                        InlineKeyboardButton.WithCallbackData("بدون ریسک", "بدون ریسک"),
+                    },
+                    new InlineKeyboardButton[]{
+                        InlineKeyboardButton.WithCallbackData("ریسک زیاد", "ریسک زیاد"),
+                        InlineKeyboardButton.WithCallbackData("ریسک خیلی کم", "ریسک خیلی کم"),
+                    },
+                    new InlineKeyboardButton[]{
+                        InlineKeyboardButton.WithCallbackData("ریسک خیلی زیاد","ریسک خیلی زیاد"),
+                        InlineKeyboardButton.WithCallbackData("ریسک کم", "ریسک کم"),
+                    },
+            });
+            SendMessage(message, "ریسک مورد نظر خود را انتخاب کنید :", inlineKeyboard);
+        }
+
+        private static async void SendSmartPortfolioToUser(Person person, Message message, int s)
+        {
+            SendMessageWithoutReply(message, "در حال ساخت پرتفوی مورد نظر ...", Markup.ReplyKeyboardMarkup1);
+            System.Threading.Tasks.Task<Stream> streamTask = null;
+            if (s == 0)
+                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}");
+            else if (s == 1)
+                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}");
+            else if (s == 2)
+                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}");
+            else if (s == 3)
+                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}");
+            else if (s == 4)
+                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}/{person.SmartPortfolioSetting.ProductionDate}");
+
+            var root_2 = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextFormation.RootObject>(await streamTask);
+
+            if (root_2.IsSuccessful)
+            {
+                StringBuilder str = new();
+                for (int i = 0; i < root_2.ResponseObject.StockAndWeights.Length; i++)
+                {
+                    var item = root_2.ResponseObject.StockAndWeights.ElementAt(i);
+                    str.Append($"number {i + 1} :\n");
+                    str.Append("tickerPooyaFa: " + item.Stock.TickerPooyaFa + "\n");
+                    str.Append("tickerNamePooyaFa: " + item.Stock.TickerNamePooyaFa + "\n");
+                    str.Append("marketType: " + item.Stock.MarketType + "\n");
+                    str.Append("weight: " + Math.Round(item.Weight * 100, 2) + " %\n\n");
+                }
+                Thread.Sleep(500);
+                SendMessageWithoutReply(message, str.ToString(), Markup.ReplyKeyboardMarkup1);
+                Thread.Sleep(500);
+
+                person.State = 8;
+                SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup13);
+            }
+            else
+            {
+                person.State = 8;
+                SendMessage(message, root_2.ErrorMessageFa, Markup.ReplyKeyboardMarkup1);
+                Thread.Sleep(300);
+                SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup13);
+            }
         }
     }
 }
