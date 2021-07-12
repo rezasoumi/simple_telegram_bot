@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NextBot.Models;
 
 namespace NextBot.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210710105610_sixth")]
+    partial class sixth
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,7 +49,7 @@ namespace NextBot.Migrations
                     b.Property<bool>("GetSave")
                         .HasColumnType("bit");
 
-                    b.Property<long>("PortfolioIdForClassicNextSelect")
+                    b.Property<long>("PorfolioIdForClassicNextSelect")
                         .HasColumnType("bigint");
 
                     b.Property<long?>("SmartPortfolioSettingId")

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using NextBot.Models;
 using NextBot.SmartSearch;
 using System;
@@ -24,12 +25,10 @@ namespace NextBot.Handlers
 
         public MessageHandler(IServiceProvider services)
         {
-
             var scope = services.CreateScope();
-
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
 
-            Bot.OnMessage += (sender, messageEventArgs) =>
+            Bot.OnMessage += async (sender, messageEventArgs) =>
             {
                 Console.WriteLine($"{messageEventArgs.Message.Chat.Username} --> {messageEventArgs.Message.Text}");
 
@@ -49,7 +48,6 @@ namespace NextBot.Handlers
             //Bot.OnInlineResultChosen += BotOnChosenInlineResultReceived;
             Bot.OnReceiveError += BotOnReceiveError;
             Bot.StartReceiving();
-
         }
 
         private async void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
@@ -148,8 +146,11 @@ namespace NextBot.Handlers
             }
             else if (person.State == 5)
             {
-                person.State = 0;
-                SendMessage(message, "هنوز پیاده سازی نشده است ... ازگزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup0);
+                var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/industry/stocks");
+                var industries = await System.Text.Json.JsonSerializer.DeserializeAsync<List<IndustryStocks.Industry>>(await streamTask);
+                SaveTickerKey(person, message, industries);
+                person.State = 26;
+                SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup14);
             }
             else if (person.State == 6)
             {
@@ -192,14 +193,15 @@ namespace NextBot.Handlers
                         SendInlineKeyboardSaveQuestion(message);
                         break;
                     case "ساخت با ریسک و حداقل وزن مشخص":
+                        person.State = 13;
                         person.GetSave = false;
                         person.GetRisk = false;
                         person.GetMinimumStockWeight = false;
-                        person.State = 13;
                         SendInlineKeyboardSaveQuestion(message);
                         break;
                     case "ساخت با ریسک و حداقل و حداکثر وزن مشخص":
                         person.State = 14;
+                        person.GetSave = false;
                         person.GetRisk = false;
                         person.GetMinimumStockWeight = false;
                         person.GetMaximumStockWeight = false;
@@ -207,6 +209,7 @@ namespace NextBot.Handlers
                         break;
                     case "ساخت با ریسک و حداقل و حداکثر و تاریخ شمسی مشخص":
                         person.State = 15;
+                        person.GetSave = false;
                         person.GetRisk = false;
                         person.GetMinimumStockWeight = false;
                         person.GetMaximumStockWeight = false;
@@ -225,50 +228,36 @@ namespace NextBot.Handlers
             else if (person.State == 10)
             {
                 if (!person.GetSave)
-                {
                     SendMessageWithoutReply(message, "شما هنوز سوال < پرتفوی مورد نظر ذخیره شود ؟ > را پاسخ نداده اید", Markup.ReplyKeyboardMarkup1);
-                }
             }
             else if (person.State == 11)
             {
                 if (!person.GetSave || !person.GetRisk)
-                {
                     SendMessageWithoutReply(message, "لطفا ریسک خود و امکان ذخیره سازی را ابتدا انتخاب کنید", Markup.ReplyKeyboardMarkup1);
-                }
             }
             else if (person.State == 13)
             {
                 if (!person.GetSave || !person.GetRisk)
-                {
                     SendMessageWithoutReply(message, "لطفا ریسک خود و امکان ذخیره سازی را ابتدا انتخاب کنید", Markup.ReplyKeyboardMarkup1);
-                }
                 else if (person.GetSave && person.GetRisk && !person.GetMinimumStockWeight && GetMinimumStockWeight(person, message))
-                {
                     SendSmartPortfolioToUser(person, message, 2);
-                }
             }
             else if (person.State == 14)
             {
                 if (!person.GetSave || !person.GetRisk)
-                {
                     SendMessageWithoutReply(message, "لطفا ریسک خود و امکان ذخیره سازی را ابتدا انتخاب کنید", Markup.ReplyKeyboardMarkup1);
-                }
                 else if (person.GetSave && person.GetRisk && !person.GetMinimumStockWeight && GetMinimumStockWeight(person, message))
                 {
                     SendMessage(message, "یک عدد به عنوان حداکثر وزن سهام ها بین 0.05 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
                     person.GetMinimumStockWeight = true;
                 }
                 else if (person.GetSave && person.GetRisk && person.GetMinimumStockWeight && !person.GetMaximumStockWeight && GetMaximumStockWeight(person, message))
-                {
                     SendSmartPortfolioToUser(person, message, 3);
-                }
             }
             else if (person.State == 15)
             {
                 if (!person.GetSave || !person.GetRisk)
-                {
                     SendMessageWithoutReply(message, "لطفا ریسک خود و امکان ذخیره سازی را ابتدا انتخاب کنید", Markup.ReplyKeyboardMarkup1);
-                }
                 else if (person.GetSave && person.GetRisk && !person.GetMinimumStockWeight && GetMinimumStockWeight(person, message))
                 {
                     SendMessage(message, "یک عدد به عنوان حداکثر وزن سهام ها بین 0.05 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.ReplyKeyboardMarkup1);
@@ -280,9 +269,7 @@ namespace NextBot.Handlers
                     person.GetMaximumStockWeight = true;
                 }
                 else if (person.GetSave && person.GetRisk && person.GetMinimumStockWeight && person.GetMaximumStockWeight && !person.GetDate && GetProductionDate(person, message))
-                {
                     SendSmartPortfolioToUser(person, message, 4);
-                }
             }
             else if (person.State == 17)
             {
@@ -351,6 +338,7 @@ namespace NextBot.Handlers
                         SendMessage(message, "از گزینه های موجود یک گزینه را وارد کنید :", Markup.ReplyKeyboardMarkup2);
                         break;
                     default:
+                        SendMessage(message, "روش انتخاب را از بین دو گزینه موجود وارد کنید :", Markup.ReplyKeyboardMarkup9);
                         break;
                 }
             }
@@ -363,8 +351,11 @@ namespace NextBot.Handlers
                         SendMessage(message, "تاریخ مورد نظر خود را به انگلیسی همانند فرمت نمونه وارد کنید (نمونه : 13991026)", Markup.ReplyKeyboardMarkup1);
                         break;
                     case "بازدهی پرتفوی تا امروز":
-                        var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PorfolioIdForClassicNextSelect}");
+                        var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PortfolioIdForClassicNextSelect}");
+                        await ShowReturnOfEveryStockInPortfolio(person, message);
+                        Thread.Sleep(1000);
                         await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask);
+                        SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup10);
                         break;
                     case "بازگشت":
                         person.State = 18;
@@ -378,8 +369,11 @@ namespace NextBot.Handlers
             {
                 if (message.Text.Length == 8)
                 {
-                    var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PorfolioIdForClassicNextSelect}/{message.Text}");
+                    var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PortfolioIdForClassicNextSelect}/{message.Text}");
+                    await ShowReturnOfEveryStockInPortfolio(person, message);
+                    Thread.Sleep(1000);
                     await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask);
+                    SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup10);
                     person.State = 21;
                 }
                 else
@@ -414,9 +408,12 @@ namespace NextBot.Handlers
                         SendMessage(message, "تاریخ مورد نظر خود را به انگلیسی همانند فرمت نمونه وارد کنید(نمونه: 13991026)", Markup.ReplyKeyboardMarkup1);
                         break;
                     case "بازدهی شاخص تا امروز":
-                        var date = GetBithdayOfPortfolio(person);
+                        var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PortfolioIdForClassicNextSelect}");
+                        await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask);
+                        var date = await GetBithdayOfPortfolio(person);
                         var streamTask_ = client.GetStreamAsync($"http://192.168.95.88:30907/api/stock/return/index/{date}");
-                        await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask_);
+                        await ShowIndextReturnInClassicNextSelect(message, streamTask_);
+                        SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup12);
                         break;
                     case "بازگشت":
                         person.State = 23;
@@ -430,13 +427,74 @@ namespace NextBot.Handlers
             {
                 if (message.Text.Length == 8)
                 {
-                    var date = GetBithdayOfPortfolio(person);
+                    var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PortfolioIdForClassicNextSelect}/{message.Text}");
+                    await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask);
+                    var date = await GetBithdayOfPortfolio(person);
                     var streamTask_ = client.GetStreamAsync($"http://192.168.95.88:30907/api/stock/return/index/{date}/{message.Text}");
-                    await ShowReturnAndComparisonInClassicNextSelect(person, message, streamTask_);
+                    await ShowIndextReturnInClassicNextSelect(message, streamTask_);
+                    SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup12);
                     person.State = 24;
                 }
                 else
                     SendMessage(message, "ورودی نامعتبر! لطفا مجدد تلاش کنید :", Markup.ReplyKeyboardMarkup1);
+            }
+            else if (person.State == 26)
+            {
+                switch (message.Text)
+                {
+                    case "محاسبه بازدهی":
+                        person.State = 27;
+                        SendMessage(message, "تاریخ شروع و پایان محاسبه بازدهی را به انگلیسی همانند فرمت نمونه وارد کنید(نمونه:14000321 13991026)", Markup.ReplyKeyboardMarkup1);
+                        break;
+                    case "بازگشت":
+                        person.State = 0;
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup0);
+                        break;
+                    default:
+                        SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup14);
+                        break;
+                }
+            }
+            else if (person.State == 27)
+            {
+                if (message.Text.Length == 17)
+                {
+                    var dates = message.Text.Split(" ");
+                    var parameter = new StockReturn.StockReturnParameterWithEndDate() { BeginDatePersian = int.Parse(dates[0]), EndDatePersian = int.Parse(dates[1]), TickerKeys = new int[] { person.TickerKeyForStock } };
+                    var json = JsonConvert.SerializeObject(parameter);
+                    var strContent = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await client.PostAsync("http://192.168.95.88:30907/api/stock/returns", strContent).Result.Content.ReadAsStringAsync();
+                    var resObj = JsonConvert.DeserializeObject<StockReturn.StockReturnRoot>(response);
+                    if (resObj.IsSuccessful)
+                        SendMessage(message, "بازدهی سهام مورد نظر در این بازه زمانی :" + "\n" + Math.Round(resObj.ResponseObject.First() * 100, 1) + " %", Markup.ReplyKeyboardMarkup1);
+                    else
+                        SendMessage(message, resObj.ErrorMessageFa, Markup.ReplyKeyboardMarkup1);
+                    Thread.Sleep(200);
+                    SendMessage(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup14);
+                    person.State = 26;
+                }
+                else
+                    SendMessage(message, "ورودی نامعتبر! لطفا مجدد تلاش کنید :", Markup.ReplyKeyboardMarkup1);
+            }
+        }
+
+        private static void SaveTickerKey(Person person, Message message, List<IndustryStocks.Industry> industries)
+        {
+            var end = false;
+            foreach (var industry in industries)
+            {
+                foreach (var stock in industry.Stocks)
+                {
+                    if (stock.Symbol == message.Text)
+                    {
+                        person.TickerKeyForStock = stock.TickerKey;
+                        end = true;
+                        break;
+                    }
+                    if (end)
+                        break;
+                }
+
             }
         }
 
@@ -452,9 +510,9 @@ namespace NextBot.Handlers
             SendMessage(message, "پرتفوی مورد نظر ذخیره شود ؟", inlineKeyboard_0);
         }
 
-        private async System.Threading.Tasks.Task<string> GetBithdayOfPortfolio(Person person)
+        private static async System.Threading.Tasks.Task<string> GetBithdayOfPortfolio(Person person)
         {
-            var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{person.PorfolioIdForClassicNextSelect}");
+            var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{person.PortfolioIdForClassicNextSelect}");
             var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask);
             var str = root.ResponseObject.BirthdayPersian;
             return str.Replace("/", "");
@@ -516,18 +574,57 @@ namespace NextBot.Handlers
             return false;
         }
 
+        private static async System.Threading.Tasks.Task ShowReturnOfEveryStockInPortfolio(Person person, Message message)
+        {
+            SendMessageWithoutReply(message, "تاریخ شروع همان تاریخ ساخت پرتفوی مورد نظر می باشد ...", Markup.ReplyKeyboardMarkup1);
+            var streamTask_ = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{person.PortfolioIdForClassicNextSelect}");
+            var root_ = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask_);
+            var tickerKeys = new List<int>();
+            var symbols = new List<string>();
+            foreach (var item in root_.ResponseObject.StockAndWeights)
+            {
+                tickerKeys.Add(item.Stock.TickerKey);
+                symbols.Add(item.Stock.TickerPooyaFa);
+            }
+            string json;
+            if (person.State == 21)
+            {
+                var parameter = new StockReturn.StockReturnParameter() { BeginDatePersian = int.Parse(await GetBithdayOfPortfolio(person)), TickerKeys = tickerKeys.ToArray() };
+                json = JsonConvert.SerializeObject(parameter);
+            }
+            else
+            {
+                var parameter = new StockReturn.StockReturnParameterWithEndDate() { BeginDatePersian = int.Parse(await GetBithdayOfPortfolio(person)), TickerKeys = tickerKeys.ToArray(), EndDatePersian = int.Parse(message.Text) };
+                json = JsonConvert.SerializeObject(parameter);
+            }
+            var strContent = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("http://192.168.95.88:30907/api/stock/returns", strContent).Result.Content.ReadAsStringAsync();
+            var resObj = JsonConvert.DeserializeObject<StockReturn.StockReturnRoot>(response);
+            foreach (var item in resObj.ResponseObject)
+            {
+                SendMessageWithoutReply(message, $"بازدهی سهم {symbols.First()} در این بازه زمانی :" + "\n" + Math.Round(item * 100, 1) + " %", Markup.ReplyKeyboardMarkup1);
+                symbols.RemoveAt(0);
+            }
+        }
+
         private static async System.Threading.Tasks.Task ShowReturnAndComparisonInClassicNextSelect(Person person, Message message, System.Threading.Tasks.Task<Stream> streamTask)
         {
             var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
             if (root.IsSuccessful)
-                SendMessage(message, $"response : " +  Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 2), Markup.ReplyKeyboardMarkup1);
+                SendMessage(message, $"بازدهی پرتفوی شماره  {person.PortfolioIdForClassicNextSelect} در مجموع : " + "\n" + Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 1) + " %", Markup.ReplyKeyboardMarkup1);
             else
                 SendMessage(message, root.ErrorMessageFa, Markup.ReplyKeyboardMarkup1);
             Thread.Sleep(500);
-            if (person.State == 25 || person.State == 26)
-                SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup12);
+        }
+
+        private static async System.Threading.Tasks.Task ShowIndextReturnInClassicNextSelect(Message message, System.Threading.Tasks.Task<Stream> streamTask)
+        {
+            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
+            if (root.IsSuccessful)
+                SendMessage(message, $"بازدهی شاخص تا همین زمان : " + "\n" + Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 1) + " %", Markup.ReplyKeyboardMarkup1);
             else
-                SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup10);
+                SendMessage(message, root.ErrorMessageFa, Markup.ReplyKeyboardMarkup1);
+            Thread.Sleep(300);
         }
 
         private static async System.Threading.Tasks.Task ShowSpecificPortfolioInClassicNextSelect(Person person, Message message, String strNumber)
@@ -535,7 +632,7 @@ namespace NextBot.Handlers
             try
             {
                 var num = int.Parse(strNumber.Trim());
-                
+
                 var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{num}");
                 var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask);
                 
@@ -551,12 +648,13 @@ namespace NextBot.Handlers
                     SendMessageWithoutReply(message, "از بین گزینه های زیر انتخاب کنید :", Markup.ReplyKeyboardMarkup8);
 
                     person.State = 18;
-                    person.PorfolioIdForClassicNextSelect = num;
+                    person.PortfolioIdForClassicNextSelect = num;
                 }
                 else
                 {
                     person.State = 20;
                     SendMessage(message, root.ErrorMessageFa, Markup.ReplyKeyboardMarkup1);
+                    Thread.Sleep(200);
                     SendMessage(message, "روش انتخاب را از بین دو گزینه موجود وارد کنید :", Markup.ReplyKeyboardMarkup9);
                 }
             }
@@ -572,7 +670,7 @@ namespace NextBot.Handlers
         {
             var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio/all");
             var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.Rootobject>(await streamTask);
-            
+
             var list_0 = new List<string> { "قبلی" };
             for (long i = person.ClassicNextSelectState; i <= Math.Min(19 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
             {
@@ -633,7 +731,7 @@ namespace NextBot.Handlers
         {
             throw new NotImplementedException();
         }
-        
+
         private async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == callbackQueryEventArgs.CallbackQuery.Message.Chat.Id);
@@ -775,7 +873,7 @@ namespace NextBot.Handlers
                     str.Append("tickerPooyaFa: " + item.Stock.TickerPooyaFa + "\n");
                     str.Append("tickerNamePooyaFa: " + item.Stock.TickerNamePooyaFa + "\n");
                     str.Append("marketType: " + item.Stock.MarketType + "\n");
-                    str.Append("weight: " + Math.Round(item.Weight * 100, 2) + " %\n\n");
+                    str.Append("weight: " + Math.Round(item.Weight * 100, 1) + " %\n\n");
                 }
                 Thread.Sleep(500);
                 SendMessageWithoutReply(message, str.ToString(), Markup.ReplyKeyboardMarkup1);
@@ -788,7 +886,7 @@ namespace NextBot.Handlers
             {
                 person.State = 8;
                 SendMessage(message, root_2.ErrorMessageFa, Markup.ReplyKeyboardMarkup1);
-                Thread.Sleep(300);
+                Thread.Sleep(200);
                 SendMessageWithoutReply(message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReplyKeyboardMarkup13);
             }
         }

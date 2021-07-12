@@ -97,6 +97,7 @@ namespace NextBot.Handlers
             },
             resizeKeyboard: true
         );  
+
         public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup13 = new(
             new KeyboardButton[][]
             {
@@ -106,6 +107,15 @@ namespace NextBot.Handlers
                     new KeyboardButton[] { "ساخت با ریسک و حداقل وزن مشخص" },
                     new KeyboardButton[] { "ساخت با ریسک و حداقل و حداکثر وزن مشخص" },
                     new KeyboardButton[] { "ساخت با ریسک و حداقل و حداکثر و تاریخ شمسی مشخص" },
+            },
+            resizeKeyboard: true
+        );
+
+        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup14 = new(
+            new KeyboardButton[][]
+            {
+                    new KeyboardButton[] { "بازگشت" },
+                    new KeyboardButton[] { "محاسبه بازدهی" },
             },
             resizeKeyboard: true
         );
