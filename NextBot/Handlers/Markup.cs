@@ -8,7 +8,7 @@ namespace NextBot.Handlers
 {
     public class Markup
     {
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup0 = new(
+        public static readonly ReplyKeyboardMarkup MainMenuRKM = new(
            new KeyboardButton[][]
            {
                     new KeyboardButton[] { "سهام", "صنعت", "پرتفوی مرکب", "پرتفوی"}
@@ -16,7 +16,7 @@ namespace NextBot.Handlers
            resizeKeyboard: true
        );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup1 = new(
+        public static readonly ReplyKeyboardMarkup EmptyRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] {""},
@@ -24,7 +24,7 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup2 = new(
+        public static readonly ReplyKeyboardMarkup SelectOrCreateRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
@@ -33,7 +33,7 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup3 = new(
+        public static readonly ReplyKeyboardMarkup SmartOrHandMadeRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
@@ -42,18 +42,7 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup5 = new(
-            new KeyboardButton[][]
-            {
-                    new KeyboardButton[] { "ریسک متوسط", "بدون ریسک" },
-                    new KeyboardButton[] { "ریسک زیاد", "ریسک خیلی کم" },
-                    new KeyboardButton[] { "ریسک خیلی زیاد", "ریسک کم" },
-                    new KeyboardButton[] { "بازگشت" },
-            },
-            resizeKeyboard: true
-        );
-
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup8 = new(
+        public static readonly ReplyKeyboardMarkup ReturnOrComparisonRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
@@ -62,7 +51,7 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup9 = new(
+        public static readonly ReplyKeyboardMarkup SelectTypesRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
@@ -71,7 +60,7 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup10 = new(
+        public static readonly ReplyKeyboardMarkup ReturnPortfolioTypesRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
@@ -80,7 +69,7 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup11 = new(
+        public static readonly ReplyKeyboardMarkup ComparisonTypesRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
@@ -89,7 +78,7 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup12 = new(
+        public static readonly ReplyKeyboardMarkup ReturnIndexTypesRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
@@ -98,7 +87,7 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );  
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup13 = new(
+        public static readonly ReplyKeyboardMarkup CreateTypesRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
@@ -111,11 +100,20 @@ namespace NextBot.Handlers
             resizeKeyboard: true
         );
 
-        public static readonly ReplyKeyboardMarkup ReplyKeyboardMarkup14 = new(
+        public static readonly ReplyKeyboardMarkup StockReturnRKM = new(
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "بازگشت" },
                     new KeyboardButton[] { "محاسبه بازدهی" },
+            },
+            resizeKeyboard: true
+        );
+        
+        public static readonly ReplyKeyboardMarkup PortfolioSetSelectRKM = new(
+            new KeyboardButton[][]
+            {
+                    new KeyboardButton[] { "بازگشت" },
+                    new KeyboardButton[] { "مقایسه", "محاسبه بازدهی", "حذف پرتفوی", "افزودن پرتفوی" },
             },
             resizeKeyboard: true
         );

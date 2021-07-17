@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace NextBot.Models
 {
-    public partial class ClassicNextSelect
+    partial class PortfolioSet
     {
         public class Responseobject
         {
@@ -13,8 +13,8 @@ namespace NextBot.Models
             public DateTime? Birthday { get; set; }
             [JsonPropertyName("birthdayPersian")]
             public string? BirthdayPersian { get; set; }
-            [JsonPropertyName("stockAndWeights")]
-            public ClassicNextFormation.Stockandweight[]? StockAndWeights { get; set; }
+            [JsonPropertyName("classicNextPortfolioSetElements")]
+            public Classicnextportfoliosetelement[]? ClassicNextPortfolioSetElements { get; set; }
         }
     }
 }

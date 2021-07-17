@@ -25,5 +25,8 @@ namespace NextBot.Models
         public bool GetMaximumStockWeight { get; set; }
         public bool GetDate { get; set; }
         public int TickerKeyForStock { get; set; }
+
+        public int CommandState { get; set; }
+        public int CommandLevel { get; set; }
     }
 }
