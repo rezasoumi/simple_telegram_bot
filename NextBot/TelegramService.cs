@@ -21,9 +21,9 @@ namespace NextBot
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<TelegramService> _logger;
         private bool disposedValue;
+        private readonly MyDbContext _context;
         public event EventHandler<ChatMessageEventArgs>? ChatMessage;
         public event EventHandler<CallbackEventArgs>? Callback;
-        private readonly MyDbContext _context;
 
         public async Task<string> BotUserName() => $"@{(await _botClient.GetMeAsync()).Username}";
 
@@ -91,7 +91,6 @@ namespace NextBot
             }
             else
             {
-
                 var botCommand = e.Message.Entities.Single(x => x.Type == MessageEntityType.BotCommand);
                 var command = e.Message.Text.Substring(botCommand.Offset, botCommand.Length);
                 command = command.Replace(await BotUserName(), string.Empty);
@@ -105,7 +104,7 @@ namespace NextBot
                     Command = command
                 });
             }
-            _context.SaveChanges();
+            //_context.SaveChanges();
         }
 
         private async void OnCallbackQuery(object? sender, CallbackQueryEventArgs e)

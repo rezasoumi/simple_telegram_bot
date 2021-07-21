@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using NextBot.Handlers;
 using NextBot.Models;
@@ -17,7 +18,7 @@ namespace NextBot.Commands
     public class ReturnCommand : IBotCommand
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly MyDbContext _context;
+        //private MyDbContext _context;
         private static readonly HttpClient client = new();
 
         public string Command => "return";
@@ -29,20 +30,20 @@ namespace NextBot.Commands
         public ReturnCommand(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            var scope = serviceProvider.CreateScope();
-            _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+            //var scope = serviceProvider.CreateScope();
+            //_context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
-        public async Task Execute(IChatService chatService, long chatId, int userId, int messageId, string? commandText)
+        public async Task Execute(IChatService chatService, long chatId, int userId, int messageId, string? commandText, MyDbContext _context)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
             person.CommandState = 1;
-
+            _context.Entry(person).State = EntityState.Modified;
             if (person.CommandLevel == 0)
             {
                 await chatService.SendMessage(chatId, message: "نام سهم مورد نظر را وارد کنید :");
                 person.CommandLevel = 1;
-                _context.SaveChanges();
+                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 1)
             {
@@ -64,6 +65,7 @@ namespace NextBot.Commands
 
                 await chatService.SendMessage(chatId, message: "سهم مورد نظر را از گزینه های موجود انتخاب کنید :", rkm: new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
                 person.CommandLevel = 2;
+                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 2)
             {
@@ -72,6 +74,7 @@ namespace NextBot.Commands
                 SaveTickerKey(person, commandText, industries);
                 await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
                 person.CommandLevel = 3;
+                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 3)
             {
@@ -90,6 +93,7 @@ namespace NextBot.Commands
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
                         break;
                 }
+                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 4)
             {
@@ -111,11 +115,14 @@ namespace NextBot.Commands
                 }
                 else
                     await chatService.SendMessage(chatId, message: "ورودی نامعتبر! لطفا مجدد تلاش کنید :");
+                _context.Entry(person).State = EntityState.Modified;
             }
             else
             {
                 await chatService.SendMessage(chatId, "TODO: Create a todo command");
+                _context.Entry(person).State = EntityState.Modified;
             }
+            _context.SaveChanges();
         }
         private static void SaveTickerKey(Person person, string text, List<IndustryStocks.Industry> industries)
         {

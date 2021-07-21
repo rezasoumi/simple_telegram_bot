@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NextBot.Models;
+using System;
 using System.Threading.Tasks;
 
 namespace NextBot.Commands
@@ -18,7 +19,7 @@ namespace NextBot.Commands
             _serviceProvider = serviceProvider;
         }
 
-        public async Task Execute(IChatService chatService, long chatId, int userId, int messageId, string? commandText)
+        public async Task Execute(IChatService chatService, long chatId, int userId, int messageId, string? commandText, MyDbContext _context)
         {
             await chatService.SendMessage(chatId, "TODO: Create a todo command");
         }

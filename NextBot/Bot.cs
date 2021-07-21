@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NextBot.Commands;
 using NextBot.Handlers;
+using NextBot.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace NextBot
         private readonly IChatService _chatService;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<Bot> _logger;
+        private readonly MyDbContext _context;
 
         public const string UnknownCommandMessage = "Unknown command. Try /help for a list of available commands.";
 
@@ -23,7 +25,9 @@ namespace NextBot
         {
             _chatService = chatService;
             _serviceProvider = serviceProvider;
-            _logger = logger;
+            _logger = logger; 
+            var scope = serviceProvider.CreateScope();
+            _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -49,6 +53,7 @@ namespace NextBot
             {
                 _logger.LogError(ex, "{Time}: OnChatMessage - Error {Exception}", DateTime.UtcNow, ex.Message);
             }
+            //_context.SaveChanges();
         }
 
         private async void OnCallback(object? sender, CallbackEventArgs callbackEventArgs)
@@ -74,13 +79,15 @@ namespace NextBot
                         chatMessageArgs.ChatId,
                         chatMessageArgs.UserId,
                         chatMessageArgs.MessageId,
-                        chatMessageArgs.Text);
+                        chatMessageArgs.Text,
+                        _context);
                 }
                 else
                 {
                     _logger.LogTrace("Unknown command was sent");
                     await chatService.SendMessage(chatMessageArgs.ChatId, UnknownCommandMessage, Markup.MainMenuRKM);
                 }
+                //_context.SaveChanges();
             }
         }
 
@@ -97,12 +104,14 @@ namespace NextBot
                         callbackEventArgs.ChatId,
                         callbackEventArgs.UserId,
                         callbackEventArgs.MessageId,
-                        callbackEventArgs.Command?.Replace(commandText, string.Empty).Trim());
+                        callbackEventArgs.Command?.Replace(commandText, string.Empty).Trim(),
+                        _context);
                 }
                 else
                 {
                     _logger.LogCritical("Invalid callback data was provided: {CallbackData}", callbackEventArgs);
                 }
+                //_context.SaveChanges();
             }
         }
     }
