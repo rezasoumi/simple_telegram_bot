@@ -2,10 +2,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NextBot.Commands;
+using NextBot.Handlers;
 using NextBot.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Args;
@@ -15,15 +17,15 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NextBot
 {
-    public class TelegramService : IChatService, IDisposable
+    public class TelegramService : StaticFunctions, IChatService, IDisposable
     {
         private readonly TelegramBotClient _botClient;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<TelegramService> _logger;
         private bool disposedValue;
-        private readonly MyDbContext _context;
+        public MyDbContext _context;
         public event EventHandler<ChatMessageEventArgs>? ChatMessage;
-        public event EventHandler<CallbackEventArgs>? Callback;
+        public event EventHandler<CallbackQueryEventArgs>? Callback;
 
         public async Task<string> BotUserName() => $"@{(await _botClient.GetMeAsync()).Username}";
 
@@ -58,6 +60,8 @@ namespace NextBot
 
         private async void OnMessage(object? sender, MessageEventArgs e)
         {
+            var scope = _serviceProvider.CreateScope();
+            _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
             _logger.LogTrace("Message received from '{Username}': '{Message}'", e.Message.From.Username ?? e.Message.From.FirstName, e.Message.Text);
 
             if (e.Message.Text == null /*|| !e.Message.Entities.Any(x => x.Type == MessageEntityType.BotCommand)*/)
@@ -78,7 +82,104 @@ namespace NextBot
 
             var person = _context.People.FirstOrDefault(p => p.ChatId == e.Message.Chat.Id);
 
-            if (person.CommandState == 1)
+            if (e.Message.Entities?.SingleOrDefault().Type == MessageEntityType.BotCommand)
+            { 
+                var botCommand = e.Message.Entities.Single(x => x.Type == MessageEntityType.BotCommand);
+                var command = e.Message.Text.Substring(botCommand.Offset, botCommand.Length);
+                command = command.Replace(await BotUserName(), string.Empty);
+                person.CommandLevel = 0;
+                _context.SaveChanges();
+                ChatMessage?.Invoke(this, new ChatMessageEventArgs
+                {
+                    Text = e.Message.Text.Replace(command, string.Empty).Trim(),
+                    UserId = e.Message.From.Id,
+                    ChatId = e.Message.Chat.Id,
+                    MessageId = e.Message.MessageId,
+                    Command = command
+                });
+            }
+            else if (person.CommandState == 0)
+            {
+                if (person.CommandLevel == 0)
+                {
+                    switch (e.Message.Text)
+                    {
+                        case "سهام":
+                            person.CommandState = 1;
+                            person.CommandLevel = 1;
+                            await _botClient.SendTextMessageAsync(person.ChatId, "نام سهم مورد نظر را وارد کنید :");
+                            break;
+                        case "صنعت":
+                            //"نام صنعت مورد نظر را وارد کنید :"
+                            break;
+                        case "پرتفوی مرکب":
+                            person.CommandLevel = 1;
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId,text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
+                            break;
+                        case "پرتفوی":
+                            person.CommandLevel = 2;
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId,text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
+                            break;
+                        default:
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId,text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
+                            break;
+                    }
+                }
+                else if (person.CommandLevel == 1)
+                {
+                    switch (e.Message.Text)
+                    {
+                        case "تشکیل":
+                            ChatMessage?.Invoke(this, new ChatMessageEventArgs
+                            {
+                                Text = e.Message.Text.Replace("/cportfolioset", string.Empty).Trim(),
+                                UserId = e.Message.From.Id,
+                                ChatId = e.Message.Chat.Id,
+                                MessageId = e.Message.MessageId,
+                                Command = "/cportfolioset"
+                            });
+                            Thread.Sleep(500);
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از بین گزینه های زیر انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
+                            break;
+                        case "انتخاب":
+                            person.CommandState = 3;
+                            person.CommandLevel = 1;
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", replyMarkup: Markup.SelectTypesRKM);
+                            break;
+                        case "بازگشت":
+                            person.CommandLevel = 0;
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
+                            break;
+                        default:
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "ورودی اشتباه ! لطفا دوباره تلاش کنید", replyMarkup: Markup.SelectOrCreateRKM);
+                            break;
+                    }
+                }
+                else if (person.CommandLevel == 2)
+                {
+                    switch (e.Message.Text)
+                    {
+                        case "تشکیل":
+                            person.CommandState = 2;
+                            person.CommandLevel = 1;
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.CreateTypesRKM);
+                            break;
+                        case "انتخاب":
+                            person.CommandState = 5;
+                            person.CommandLevel = 1;
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", replyMarkup: Markup.SelectTypesRKM);
+                            break;
+                        case "بازگشت":
+                            person.CommandLevel = 0;
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
+                            break;
+                        default:
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "ورودی اشتباه ! لطفا دوباره تلاش کنید", replyMarkup: Markup.SelectOrCreateRKM);
+                            break;
+                    }
+                }
+            }
+            else if (person.CommandState == 1)
             {
                 ChatMessage?.Invoke(this, new ChatMessageEventArgs
                 {
@@ -89,44 +190,68 @@ namespace NextBot
                     Command = "/return"
                 });
             }
-            else
+            else if (person.CommandState == 2)
             {
-                var botCommand = e.Message.Entities.Single(x => x.Type == MessageEntityType.BotCommand);
-                var command = e.Message.Text.Substring(botCommand.Offset, botCommand.Length);
-                command = command.Replace(await BotUserName(), string.Empty);
-
                 ChatMessage?.Invoke(this, new ChatMessageEventArgs
                 {
-                    Text = e.Message.Text.Replace(command, string.Empty).Trim(),
+                    Text = e.Message.Text.Replace("/cportfolio", string.Empty).Trim(),
                     UserId = e.Message.From.Id,
                     ChatId = e.Message.Chat.Id,
                     MessageId = e.Message.MessageId,
-                    Command = command
+                    Command = "/cportfolio"
                 });
             }
-            //_context.SaveChanges();
+            else if (person.CommandState == 3)
+            {
+                ChatMessage?.Invoke(this, new ChatMessageEventArgs
+                {
+                    Text = e.Message.Text.Replace("/sportfolioset", string.Empty).Trim(),
+                    UserId = e.Message.From.Id,
+                    ChatId = e.Message.Chat.Id,
+                    MessageId = e.Message.MessageId,
+                    Command = "/sportfolioset"
+                });
+            }
+            else if (person.CommandState == 4)
+            {
+                ChatMessage?.Invoke(this, new ChatMessageEventArgs
+                {
+                    Text = e.Message.Text.Replace("/cportfolioset", string.Empty).Trim(),
+                    UserId = e.Message.From.Id,
+                    ChatId = e.Message.Chat.Id,
+                    MessageId = e.Message.MessageId,
+                    Command = "/cportfolioset"
+                });
+            }
+            else if (person.CommandState == 5)
+            {
+                ChatMessage?.Invoke(this, new ChatMessageEventArgs
+                {
+                    Text = e.Message.Text.Replace("/sportfolio", string.Empty).Trim(),
+                    UserId = e.Message.From.Id,
+                    ChatId = e.Message.Chat.Id,
+                    MessageId = e.Message.MessageId,
+                    Command = "/sportfolio"
+                });
+            }
+            _context.SaveChanges();
         }
 
-        private async void OnCallbackQuery(object? sender, CallbackQueryEventArgs e)
+        private void OnCallbackQuery(object? sender, CallbackQueryEventArgs e)
         {
             _logger.LogTrace("Callback received from '{Username}': '{Message}'", e.CallbackQuery.From.Username ?? e.CallbackQuery.From.FirstName, e.CallbackQuery.Data);
-
+            
             if (sender is TelegramBotClient client)
             {
+                Callback?.Invoke(this, e);
                 // This removes the keyboard, but we could also update one here...
-                await client.EditMessageReplyMarkupAsync(e.CallbackQuery.Message.Chat.Id, e.CallbackQuery.Message.MessageId, null);
+                //await client.EditMessageReplyMarkupAsync(e.CallbackQuery.Message.Chat.Id, e.CallbackQuery.Message.MessageId, null);
 
-                Callback?.Invoke(this, new CallbackEventArgs
-                {
-                    ChatId = e.CallbackQuery.Message.Chat.Id,
-                    UserId = e.CallbackQuery.From.Id,
-                    MessageId = e.CallbackQuery.Message.MessageId,
-                    Command = e.CallbackQuery.Data
-                });
+                //Callback?.Invoke(this, e);
             }
         }
 
-        public async Task<bool> UpdateMessage(long chatId, int messageId, string? newText, Dictionary<string, string>? buttons = null)
+        public async Task<bool> UpdateMessage(long chatId, int messageId, string? newText, InlineKeyboardMarkup inlineKeyboard = null)
         {
             try
             {
@@ -134,7 +259,7 @@ namespace NextBot
 
                 _logger.LogTrace("Updating message {MessageId}: {NewText}", messageId, newText);
 
-                await _botClient.EditMessageTextAsync(new ChatId(chatId), messageId, newText, parseMode: ParseMode.MarkdownV2, replyMarkup: GetInlineKeyboard(buttons));
+                await _botClient.EditMessageTextAsync(new ChatId(chatId), messageId, newText, parseMode: ParseMode.MarkdownV2, replyMarkup: inlineKeyboard);
                 return true;
             }
             catch (Exception ex)
@@ -227,6 +352,12 @@ namespace NextBot
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        public async Task<bool> AnswerCallbackQueryAsync(string callbackQueryId)
+        {
+            await _botClient.AnswerCallbackQueryAsync(callbackQueryId);
+            return true;
         }
     }
 }

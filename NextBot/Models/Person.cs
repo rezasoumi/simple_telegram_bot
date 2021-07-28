@@ -30,5 +30,8 @@ namespace NextBot.Models
         public int CommandLevel { get; set; }
 
         public string StartDateWaitingForEndDate { get; set; }
+
+        public int CreateSmartPortfolioType { get; set; }
+
     }
 }

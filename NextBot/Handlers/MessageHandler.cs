@@ -492,7 +492,7 @@ namespace NextBot.Handlers
             }
             else if (person.State == 22)
             {
-                
+
             }
             else if (person.State == 23)
             {
@@ -547,7 +547,7 @@ namespace NextBot.Handlers
             }
             else if (person.State == 25)
             {
-                
+
             }
             else if (person.State == 26)
             {
@@ -625,7 +625,7 @@ namespace NextBot.Handlers
             }
             else if (person.State == 32)
             {
-                
+
             }
             else if (person.State == 33)
             {
@@ -982,202 +982,207 @@ namespace NextBot.Handlers
 
         private async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
-            var person = _context.People.FirstOrDefault(p => p.ChatId == callbackQueryEventArgs.CallbackQuery.Message.Chat.Id);
-
-            var callbackQuery = callbackQueryEventArgs.CallbackQuery;
-            /*
-            await Bot.AnswerCallbackQueryAsync(
-                callbackQueryId: callbackQuery.Id,
-                text: $"{callbackQueryEventArgs.CallbackQuery.Data} دریافت شد",
-                showAlert: false,
-                url: null
-            );
-            */
-            if (callbackQuery.Data.Contains(";"))
+            try
             {
-                var m = await ProcessCalendar(callbackQueryEventArgs);
-                if (m != null)
+                var person = _context.People.FirstOrDefault(p => p.ChatId == callbackQueryEventArgs.CallbackQuery.Message.Chat.Id);
+
+                var callbackQuery = callbackQueryEventArgs.CallbackQuery;
+
+                await Bot.AnswerCallbackQueryAsync(
+                    callbackQueryId: callbackQuery.Id,
+                    text: $"{callbackQueryEventArgs.CallbackQuery.Data} دریافت شد",
+                    showAlert: false,
+                    url: null
+                );
+
+                if (callbackQuery.Data.Contains(";"))
                 {
-                    string date;
-                    if (m.Month.ToString().Length == 1 && m.Day.ToString().Length == 1)
-                        date = $"{m.Year}0{m.Month}0{m.Day}";
-                    else if (m.Month.ToString().Length == 1 && m.Day.ToString().Length != 1)
-                        date = $"{m.Year}0{m.Month}{m.Day}";
-                    else if (m.Month.ToString().Length != 1 && m.Day.ToString().Length == 1)
-                        date = $"{m.Year}{m.Month}0{m.Day}";
-                    else
-                        date = $"{m.Year}{m.Month}{m.Day}";
-                    if (person.State == 15)
+                    var m = await ProcessCalendar(callbackQueryEventArgs);
+                    if (m != null)
                     {
-                        person.SmartPortfolioSetting.ProductionDate = date;
-                        SendSmartPortfolioToUser(person, callbackQuery.Message, 4);
-
-                    }
-                    else if (person.State == 22)
-                    {
-                        var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PortfolioIdForClassicNextSelect}/{date}");
-                        if (await ShowReturnAndComparisonInClassicNextSelect(person, callbackQuery.Message, streamTask, person.PortfolioIdForClassicNextSelect))
-                        {
-                            SendMessageWithoutReply(callbackQuery.Message, "بازدهی سهم های موجود در پرتفوی :", Markup.EmptyRKM);
-                            await ShowReturnOfEveryStockInPortfolio(person, callbackQuery.Message);
-                        }
-                        Thread.Sleep(1000);
-                        SendMessageWithoutReply(callbackQuery.Message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReturnPortfolioTypesRKM);
-                        person.State = 21;
-                    }
-                    else if (person.State == 25)
-                    {
-                        var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PortfolioIdForClassicNextSelect}/{date}");
-                        if (await ShowReturnAndComparisonInClassicNextSelect(person, callbackQuery.Message, streamTask, person.PortfolioIdForClassicNextSelect))
-                        {
-                            var date_ = await GetBithdayOfPortfolio(person);
-                            var streamTask_ = client.GetStreamAsync($"http://192.168.95.88:30907/api/stock/return/index/{date_}/{date}");
-                            await ShowIndextReturnInClassicNextSelect(callbackQuery.Message, streamTask_);
-                        }
-                        Thread.Sleep(500);
-                        SendMessageWithoutReply(callbackQuery.Message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReturnIndexTypesRKM);
-                        person.State = 24;
-                    }
-                    else if (person.State == 27)
-                    {
-                        person.StartDateWaitingForEndDate = date;
-                        SendMessageWithoutReply(callbackQuery.Message, "تاریخ پایان محاسبه بازدهی را انتخاب کنید :", CreateCalendar());
-                        person.State = 33;
-                    }
-                    else if (person.State == 32)
-                    {
-                        SendMessageWithoutReply(callbackQuery.Message, "تاریخ شروع همان تاریخ ساخت پرتفوی مورد نظر می باشد ...", Markup.EmptyRKM);
-                        var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolioSet/return/{person.PortfolioIdForClassicNextSelect}/{date}");
-                        var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
-                        if (root.IsSuccessful)
-                            SendMessage(callbackQuery.Message, $"بازدهی پرتفوی مرکب شماره  {person.PortfolioIdForClassicNextSelect} : " + "\n" + Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 1) + " %", Markup.PortfolioSetSelectRKM);
+                        string date;
+                        if (m.Month.ToString().Length == 1 && m.Day.ToString().Length == 1)
+                            date = $"{m.Year}0{m.Month}0{m.Day}";
+                        else if (m.Month.ToString().Length == 1 && m.Day.ToString().Length != 1)
+                            date = $"{m.Year}0{m.Month}{m.Day}";
+                        else if (m.Month.ToString().Length != 1 && m.Day.ToString().Length == 1)
+                            date = $"{m.Year}{m.Month}0{m.Day}";
                         else
-                            SendMessage(callbackQuery.Message, root.ErrorMessageFa, Markup.PortfolioSetSelectRKM);
-                        SendMessageWithoutReply(callbackQuery.Message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.PortfolioSetSelectRKM);
-                        person.State = 29;
-                    }
-                    else if (person.State == 33)
-                    {
-                        var parameter = new StockReturn.StockReturnParameterWithEndDate() { BeginDatePersian = int.Parse(person.StartDateWaitingForEndDate), EndDatePersian = int.Parse(date), TickerKeys = new int[] { person.TickerKeyForStock } };
-                        var json = JsonConvert.SerializeObject(parameter);
-                        var strContent = new StringContent(json, Encoding.UTF8, "application/json");
-                        var response = await client.PostAsync("http://192.168.95.88:30907/api/stock/returns", strContent).Result.Content.ReadAsStringAsync();
-                        var resObj = JsonConvert.DeserializeObject<StockReturn.StockReturnRoot>(response);
-                        if (resObj.IsSuccessful)
-                            SendMessageWithoutReply(callbackQuery.Message, "بازدهی سهام مورد نظر در این بازه زمانی :" + "\n" + Math.Round(resObj.ResponseObject.First() * 100, 1) + " %", Markup.EmptyRKM);
-                        else
-                            SendMessageWithoutReply(callbackQuery.Message, resObj.ErrorMessageFa, Markup.EmptyRKM);
-                        Thread.Sleep(200);
-                        SendMessageWithoutReply(callbackQuery.Message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.StockReturnRKM);
-                        person.State = 26;
-                    }
+                            date = $"{m.Year}{m.Month}{m.Day}";
+                        if (person.State == 15)
+                        {
+                            person.SmartPortfolioSetting.ProductionDate = date;
+                            SendSmartPortfolioToUser(person, callbackQuery.Message, 4);
 
+                        }
+                        else if (person.State == 22)
+                        {
+                            var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PortfolioIdForClassicNextSelect}/{date}");
+                            if (await ShowReturnAndComparisonInClassicNextSelect(person, callbackQuery.Message, streamTask, person.PortfolioIdForClassicNextSelect))
+                            {
+                                SendMessageWithoutReply(callbackQuery.Message, "بازدهی سهم های موجود در پرتفوی :", Markup.EmptyRKM);
+                                await ShowReturnOfEveryStockInPortfolio(person, callbackQuery.Message);
+                            }
+                            Thread.Sleep(1000);
+                            SendMessageWithoutReply(callbackQuery.Message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReturnPortfolioTypesRKM);
+                            person.State = 21;
+                        }
+                        else if (person.State == 25)
+                        {
+                            var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/return/{person.PortfolioIdForClassicNextSelect}/{date}");
+                            if (await ShowReturnAndComparisonInClassicNextSelect(person, callbackQuery.Message, streamTask, person.PortfolioIdForClassicNextSelect))
+                            {
+                                var date_ = await GetBithdayOfPortfolio(person);
+                                var streamTask_ = client.GetStreamAsync($"http://192.168.95.88:30907/api/stock/return/index/{date_}/{date}");
+                                await ShowIndextReturnInClassicNextSelect(callbackQuery.Message, streamTask_);
+                            }
+                            Thread.Sleep(500);
+                            SendMessageWithoutReply(callbackQuery.Message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReturnIndexTypesRKM);
+                            person.State = 24;
+                        }
+                        else if (person.State == 27)
+                        {
+                            person.StartDateWaitingForEndDate = date;
+                            SendMessageWithoutReply(callbackQuery.Message, "تاریخ پایان محاسبه بازدهی را انتخاب کنید :", CreateCalendar());
+                            person.State = 33;
+                        }
+                        else if (person.State == 32)
+                        {
+                            SendMessageWithoutReply(callbackQuery.Message, "تاریخ شروع همان تاریخ ساخت پرتفوی مورد نظر می باشد ...", Markup.EmptyRKM);
+                            var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolioSet/return/{person.PortfolioIdForClassicNextSelect}/{date}");
+                            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
+                            if (root.IsSuccessful)
+                                SendMessage(callbackQuery.Message, $"بازدهی پرتفوی مرکب شماره  {person.PortfolioIdForClassicNextSelect} : " + "\n" + Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 1) + " %", Markup.PortfolioSetSelectRKM);
+                            else
+                                SendMessage(callbackQuery.Message, root.ErrorMessageFa, Markup.PortfolioSetSelectRKM);
+                            SendMessageWithoutReply(callbackQuery.Message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.PortfolioSetSelectRKM);
+                            person.State = 29;
+                        }
+                        else if (person.State == 33)
+                        {
+                            var parameter = new StockReturn.StockReturnParameterWithEndDate() { BeginDatePersian = int.Parse(person.StartDateWaitingForEndDate), EndDatePersian = int.Parse(date), TickerKeys = new int[] { person.TickerKeyForStock } };
+                            var json = JsonConvert.SerializeObject(parameter);
+                            var strContent = new StringContent(json, Encoding.UTF8, "application/json");
+                            var response = await client.PostAsync("http://192.168.95.88:30907/api/stock/returns", strContent).Result.Content.ReadAsStringAsync();
+                            var resObj = JsonConvert.DeserializeObject<StockReturn.StockReturnRoot>(response);
+                            if (resObj.IsSuccessful)
+                                SendMessageWithoutReply(callbackQuery.Message, "بازدهی سهام مورد نظر در این بازه زمانی :" + "\n" + Math.Round(resObj.ResponseObject.First() * 100, 1) + " %", Markup.EmptyRKM);
+                            else
+                                SendMessageWithoutReply(callbackQuery.Message, resObj.ErrorMessageFa, Markup.EmptyRKM);
+                            Thread.Sleep(200);
+                            SendMessageWithoutReply(callbackQuery.Message, "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.StockReturnRKM);
+                            person.State = 26;
+                        }
+                    }
                 }
+                else if (callbackQuery.Data.Equals("خیر"))
+                {
+                    await Bot.EditMessageTextAsync(text: "پرتفوی مورد نظر ذخیره نمی شود",
+                                                   chatId: callbackQuery.Message.Chat.Id,
+                                                   messageId: callbackQuery.Message.MessageId);
+                    person.GetSave = true;
+                    person.SmartPortfolioSetting.Save = false;
 
+                    if (person.State == 10)
+                        SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 0);
+                    if (person.State == 11 || person.State == 13 || person.State == 14 || person.State == 15)
+                        GetRiskByInlineKeyboard(callbackQueryEventArgs.CallbackQuery.Message);
+                }
+                else if (callbackQuery.Data.Equals("بلی"))
+                {
+                    await Bot.EditMessageTextAsync(text: "پرتفوی مورد نظر ذخیره می شود",
+                                                   chatId: callbackQuery.Message.Chat.Id,
+                                                   messageId: callbackQuery.Message.MessageId);
+                    person.GetSave = true;
+                    person.SmartPortfolioSetting.Save = true;
+
+                    if (person.State == 10)
+                        SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 0);
+                    if (person.State == 11 || person.State == 13 || person.State == 14 || person.State == 15)
+                        GetRiskByInlineKeyboard(callbackQueryEventArgs.CallbackQuery.Message);
+                }
+                else if (callbackQuery.Data.Equals("بدون ریسک"))
+                {
+                    await Bot.EditMessageTextAsync(text: "درجه ریسک : بدون ریسک",
+                                                   chatId: callbackQuery.Message.Chat.Id,
+                                                   messageId: callbackQuery.Message.MessageId);
+                    person.SmartPortfolioSetting.RiskRate = 0;
+                    person.GetRisk = true;
+
+                    if (person.State == 11)
+                        SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                    if (person.State == 13 || person.State == 14 || person.State == 15)
+                        SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
+                }
+                else if (callbackQuery.Data.Equals("ریسک خیلی کم"))
+                {
+                    await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک خیلی کم",
+                                                   chatId: callbackQuery.Message.Chat.Id,
+                                                   messageId: callbackQuery.Message.MessageId);
+                    person.SmartPortfolioSetting.RiskRate = 1;
+                    person.GetRisk = true;
+
+                    if (person.State == 11)
+                        SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                    if (person.State == 13 || person.State == 14 || person.State == 15)
+                        SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
+                }
+                else if (callbackQuery.Data.Equals("ریسک کم"))
+                {
+                    await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک کم",
+                                                   chatId: callbackQuery.Message.Chat.Id,
+                                                   messageId: callbackQuery.Message.MessageId);
+                    person.SmartPortfolioSetting.RiskRate = 2;
+                    person.GetRisk = true;
+
+                    if (person.State == 11)
+                        SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                    if (person.State == 13 || person.State == 14 || person.State == 15)
+                        SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
+                }
+                else if (callbackQuery.Data.Equals("ریسک متوسط"))
+                {
+                    await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک متوسط",
+                                                   chatId: callbackQuery.Message.Chat.Id,
+                                                   messageId: callbackQuery.Message.MessageId);
+                    person.SmartPortfolioSetting.RiskRate = 3;
+                    person.GetRisk = true;
+
+                    if (person.State == 11)
+                        SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                    if (person.State == 13 || person.State == 14 || person.State == 15)
+                        SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
+                }
+                else if (callbackQuery.Data.Equals("ریسک زیاد"))
+                {
+                    await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک زیاد",
+                                                   chatId: callbackQuery.Message.Chat.Id,
+                                                   messageId: callbackQuery.Message.MessageId);
+                    person.SmartPortfolioSetting.RiskRate = 4;
+                    person.GetRisk = true;
+
+                    if (person.State == 11)
+                        SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                    if (person.State == 13 || person.State == 14 || person.State == 15)
+                        SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
+                }
+                else if (callbackQuery.Data.Equals("ریسک خیلی زیاد"))
+                {
+                    await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک خیلی زیاد",
+                                                   chatId: callbackQuery.Message.Chat.Id,
+                                                   messageId: callbackQuery.Message.MessageId);
+                    person.SmartPortfolioSetting.RiskRate = 5;
+                    person.GetRisk = true;
+
+                    if (person.State == 11)
+                        SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
+                    if (person.State == 13 || person.State == 14 || person.State == 15)
+                        SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
+                }
             }
-            else if (callbackQuery.Data.Equals("خیر"))
+            catch (Exception e)
             {
-                await Bot.EditMessageTextAsync(text: "پرتفوی مورد نظر ذخیره نمی شود",
-                                               chatId: callbackQuery.Message.Chat.Id,
-                                               messageId: callbackQuery.Message.MessageId);
-                person.GetSave = true;
-                person.SmartPortfolioSetting.Save = false;
-
-                if (person.State == 10)
-                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 0);
-                if (person.State == 11 || person.State == 13 || person.State == 14 || person.State == 15)
-                    GetRiskByInlineKeyboard(callbackQueryEventArgs.CallbackQuery.Message);
-            }
-            else if (callbackQuery.Data.Equals("بلی"))
-            {
-                await Bot.EditMessageTextAsync(text: "پرتفوی مورد نظر ذخیره می شود",
-                                               chatId: callbackQuery.Message.Chat.Id,
-                                               messageId: callbackQuery.Message.MessageId);
-                person.GetSave = true;
-                person.SmartPortfolioSetting.Save = true;
-
-                if (person.State == 10)
-                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 0);
-                if (person.State == 11 || person.State == 13 || person.State == 14 || person.State == 15)
-                    GetRiskByInlineKeyboard(callbackQueryEventArgs.CallbackQuery.Message);
-            }
-            else if (callbackQuery.Data.Equals("بدون ریسک"))
-            {
-                await Bot.EditMessageTextAsync(text: "درجه ریسک : بدون ریسک",
-                                               chatId: callbackQuery.Message.Chat.Id,
-                                               messageId: callbackQuery.Message.MessageId);
-                person.SmartPortfolioSetting.RiskRate = 0;
-                person.GetRisk = true;
-
-                if (person.State == 11)
-                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
-                if (person.State == 13 || person.State == 14 || person.State == 15)
-                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
-            }
-            else if (callbackQuery.Data.Equals("ریسک خیلی کم"))
-            {
-                await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک خیلی کم",
-                                               chatId: callbackQuery.Message.Chat.Id,
-                                               messageId: callbackQuery.Message.MessageId);
-                person.SmartPortfolioSetting.RiskRate = 1;
-                person.GetRisk = true;
-
-                if (person.State == 11)
-                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
-                if (person.State == 13 || person.State == 14 || person.State == 15)
-                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
-            }
-            else if (callbackQuery.Data.Equals("ریسک کم"))
-            {
-                await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک کم",
-                                               chatId: callbackQuery.Message.Chat.Id,
-                                               messageId: callbackQuery.Message.MessageId);
-                person.SmartPortfolioSetting.RiskRate = 2;
-                person.GetRisk = true;
-
-                if (person.State == 11)
-                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
-                if (person.State == 13 || person.State == 14 || person.State == 15)
-                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
-            }
-            else if (callbackQuery.Data.Equals("ریسک متوسط"))
-            {
-                await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک متوسط",
-                                               chatId: callbackQuery.Message.Chat.Id,
-                                               messageId: callbackQuery.Message.MessageId);
-                person.SmartPortfolioSetting.RiskRate = 3;
-                person.GetRisk = true;
-
-                if (person.State == 11)
-                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
-                if (person.State == 13 || person.State == 14 || person.State == 15)
-                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
-            }
-            else if (callbackQuery.Data.Equals("ریسک زیاد"))
-            {
-                await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک زیاد",
-                                               chatId: callbackQuery.Message.Chat.Id,
-                                               messageId: callbackQuery.Message.MessageId);
-                person.SmartPortfolioSetting.RiskRate = 4;
-                person.GetRisk = true;
-
-                if (person.State == 11)
-                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
-                if (person.State == 13 || person.State == 14 || person.State == 15)
-                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
-            }
-            else if (callbackQuery.Data.Equals("ریسک خیلی زیاد"))
-            {
-                await Bot.EditMessageTextAsync(text: "درجه ریسک : ریسک خیلی زیاد",
-                                               chatId: callbackQuery.Message.Chat.Id,
-                                               messageId: callbackQuery.Message.MessageId);
-                person.SmartPortfolioSetting.RiskRate = 5;
-                person.GetRisk = true;
-
-                if (person.State == 11)
-                    SendSmartPortfolioToUser(person, callbackQueryEventArgs.CallbackQuery.Message, 1);
-                if (person.State == 13 || person.State == 14 || person.State == 15)
-                    SendMessageWithoutReply(callbackQueryEventArgs.CallbackQuery.Message, "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)", Markup.EmptyRKM);
+                Console.WriteLine(e.Message);
             }
         }
 
@@ -1214,7 +1219,7 @@ namespace NextBot.Handlers
             else if (s == 3)
                 streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}");
             else if (s == 4)
-                await ( streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}/{person.SmartPortfolioSetting.ProductionDate}") );
+                await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}/{person.SmartPortfolioSetting.ProductionDate}"));
 
             var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextFormation.RootObject>(await streamTask);
 
@@ -1307,7 +1312,7 @@ namespace NextBot.Handlers
             row6 = AppendToRow(year, month, dataIgnore, row6, listFour);
             row7 = AppendToLastRow(year, month, dataIgnore, row7, listFive);
             row8 = AppendToLastRow(year, month, dataIgnore, row8, listSix);
-            
+
             var row9 = new InlineKeyboardButton[] { InlineKeyboardButton.WithCallbackData("<<", CreateCallbackData("PREV-YEAR", year, month, 0)),
                                                     InlineKeyboardButton.WithCallbackData("<", CreateCallbackData("PREV-MONTH", year, month, 0)),
                                                     InlineKeyboardButton.WithCallbackData(" ", dataIgnore),
@@ -1344,7 +1349,7 @@ namespace NextBot.Handlers
             }
             return row;
         }
-        
+
         private string CreateCallbackData(string action, int year, int month, int day)
         {
             object[] array = { action, year.ToString(), month.ToString(), day.ToString() };
@@ -1374,8 +1379,8 @@ namespace NextBot.Handlers
             }
             else if (action == "DAY")
             {
-                await Bot.EditMessageTextAsync(text: "تاریخ مورد نظر : " + year + "/" + month + "/" + day, 
-                                               chatId: query.Message.Chat.Id, 
+                await Bot.EditMessageTextAsync(text: "تاریخ مورد نظر : " + year + "/" + month + "/" + day,
+                                               chatId: query.Message.Chat.Id,
                                                messageId: query.Message.MessageId);
 
                 if (month.ToString().Length == 1 && day.ToString().Length == 1)

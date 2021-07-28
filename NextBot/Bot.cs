@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Telegram.Bot.Args;
 
 namespace NextBot
 {
@@ -17,7 +18,7 @@ namespace NextBot
         private readonly IChatService _chatService;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<Bot> _logger;
-        private readonly MyDbContext _context;
+        private MyDbContext _context;
 
         public const string UnknownCommandMessage = "Unknown command. Try /help for a list of available commands.";
 
@@ -53,10 +54,9 @@ namespace NextBot
             {
                 _logger.LogError(ex, "{Time}: OnChatMessage - Error {Exception}", DateTime.UtcNow, ex.Message);
             }
-            //_context.SaveChanges();
         }
 
-        private async void OnCallback(object? sender, CallbackEventArgs callbackEventArgs)
+        private async void OnCallback(object? sender, CallbackQueryEventArgs callbackEventArgs)
         {
             try
             {
@@ -75,43 +75,56 @@ namespace NextBot
                 var command = _serviceProvider.GetServices<IBotCommand>().SingleOrDefault(x => $"/{x.Command}".Equals(chatMessageArgs.Command, StringComparison.InvariantCultureIgnoreCase));
                 if (command != null)
                 {
-                    await command.Execute(chatService,
+                    _context = await command.Execute(chatService,
                         chatMessageArgs.ChatId,
                         chatMessageArgs.UserId,
                         chatMessageArgs.MessageId,
                         chatMessageArgs.Text,
-                        _context);
+                        null
+                        );
                 }
                 else
                 {
                     _logger.LogTrace("Unknown command was sent");
                     await chatService.SendMessage(chatMessageArgs.ChatId, UnknownCommandMessage, Markup.MainMenuRKM);
                 }
-                //_context.SaveChanges();
             }
         }
 
-        private async Task ProcessCallback(object? sender, CallbackEventArgs callbackEventArgs)
+        private async Task ProcessCallback(object? sender, CallbackQueryEventArgs query)
         {
+            var person = _context.People.FirstOrDefault(p => p.ChatId == query.CallbackQuery.Message.Chat.Id);
+
             if (sender is IChatService chatService)
             {
-                var commandText = callbackEventArgs.Command?.Split(' ').First();
+                string commandText = null;
+                if (person.CommandState == 1)
+                    commandText = "/return";
+                else if (person.CommandState == 2)
+                    commandText = "/cportfolio";
+                else if (person.CommandState == 3)
+                    commandText = "/sportfolioset";
+                else if (person.CommandState == 4)
+                    commandText = "/cportfolioset";
+                else if (person.CommandState == 5)
+                    commandText = "/sportfolio";
+
                 var command = _serviceProvider.GetServices<IBotCommand>().SingleOrDefault(x => $"/{x.Command}".Equals(commandText, StringComparison.InvariantCultureIgnoreCase));
 
                 if (command != null && !string.IsNullOrEmpty(commandText))
                 {
-                    await command.Execute(chatService,
-                        callbackEventArgs.ChatId,
-                        callbackEventArgs.UserId,
-                        callbackEventArgs.MessageId,
-                        callbackEventArgs.Command?.Replace(commandText, string.Empty).Trim(),
-                        _context);
+                    _context = await command.Execute(chatService,
+                        query.CallbackQuery.Message.Chat.Id,
+                        query.CallbackQuery.From.Id,
+                        query.CallbackQuery.Message.MessageId,
+                        query.CallbackQuery.Data?.Replace(commandText, string.Empty).Trim(),
+                        query
+                        );
                 }
                 else
                 {
-                    _logger.LogCritical("Invalid callback data was provided: {CallbackData}", callbackEventArgs);
+                    _logger.LogCritical("Invalid callback data was provided: {CallbackData}", query);
                 }
-                //_context.SaveChanges();
             }
         }
     }
