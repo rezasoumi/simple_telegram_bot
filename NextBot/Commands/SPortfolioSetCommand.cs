@@ -3,20 +3,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using NextBot.Handlers;
 using NextBot.Models;
-using NextBot.SmartSearch;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot.Args;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NextBot.Commands
 {
-    public class SPortfolioSet : StaticFunctions, IBotCommand
+    public class SPortfolioSetCommand : StaticFunctions, IBotCommand
     {
         private readonly IServiceProvider _serviceProvider;
         private MyDbContext _context;
@@ -27,14 +24,14 @@ namespace NextBot.Commands
 
         public bool InternalCommand => false;
 
-        public SPortfolioSet(IServiceProvider serviceProvider)
+        public SPortfolioSetCommand(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
             var scope = serviceProvider.CreateScope();
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
-        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, int userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
+        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
             person.CommandState = 3;
@@ -59,12 +56,13 @@ namespace NextBot.Commands
                         person.ClassicNextSelectState = 1;
                         person = await ShowPreviousOrNextListInPortfolioSetSelect(chatService, person);
                         break;
-                    case "بازگشت":
+                    case "🔙":
                         person.CommandState = 0;
                         person.CommandLevel = 0;
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.MainMenuRKM);
                         break;
                     default:
+                        await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.SelectTypesRKM);
                         break;
                 }
                 _context.Entry(person).State = EntityState.Modified;
@@ -73,10 +71,10 @@ namespace NextBot.Commands
             {
                 switch (commandText)
                 {
-                    case "بعدی":
+                    case "بعدی⬇️":
                         person = await ShowPreviousOrNextListInPortfolioSetSelect(chatService, person);
                         break;
-                    case "قبلی":
+                    case "قبلی⬆️":
                         if (person.ClassicNextSelectState == 21)
                         {
                             person.CommandLevel = 1;
@@ -87,9 +85,16 @@ namespace NextBot.Commands
                         person = await ShowPreviousOrNextListInPortfolioSetSelect(chatService, person);
                         break;
                     default:
-                        var split = commandText.Split(" ");
-                        var strNum = split[3];
-                        person = await ShowSpecificPortfolioSetInClassicNextSelect(chatService, person, strNum);
+                        try
+                        {
+                            var split = commandText.Split(" ");
+                            var strNum = split[3];
+                            person = await ShowSpecificPortfolioSetInClassicNextSelect(chatService, person, strNum);
+                        }
+                        catch (Exception e)
+                        {
+                            await chatService.SendMessage(chatId, message: "خطایی رخ داده است. لطفا مجدد تلاش کنید.");
+                        }
                         break;
                 }
                 _context.Entry(person).State = EntityState.Modified;
@@ -98,29 +103,30 @@ namespace NextBot.Commands
             {
                 switch (commandText)
                 {
-                    case "افزودن پرتفوی":
+                    case "افزودن پرتفوی➕":
                         person.CommandLevel = 4;
                         await chatService.SendMessage(chatId, message: "آی دی پرتفوی های مورد نظر را با یک فاصله به صورت انگلیسی وارد نمایید : (نمونه : 13 15 23)");
                         break;
-                    case "حذف پرتفوی":
+                    case "حذف پرتفوی➖":
                         break;
-                    case "محاسبه بازدهی":
+                    case "محاسبه بازدهی📈":
                         person.CommandLevel = 7;
                         await chatService.SendMessage(chatId, message: "نوع بازدهی را مشخص کنید :", Markup.ReturnPortfolioSetTypesRKM);
                         break;
-                    case "مقایسه":
+                    case "مقایسه📊":
                         person.CommandLevel = 9;
                         await chatService.SendMessage(chatId: chatId, message: "گزینه مورد نظر را انتخاب کنید :", Markup.ComparisonSetTypesRKM);
                         break;
-                    case "حذف پرتفوی مرکب":
+                    case "حذف پرتفوی مرکب❌":
                         person.CommandLevel = 8;
                         await chatService.SendMessage(chatId, message: "پرتفوی مورد نظر حذف شود ؟", GetSaveInlineKeyboard());
                         break;
-                    case "بازگشت":
+                    case "🔙":
                         person.CommandLevel = 1;
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.SelectTypesRKM);
                         break;
                     default:
+                        await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.PortfolioSetSelectRKM);
                         break;
                 }
                 _context.Entry(person).State = EntityState.Modified;
@@ -179,7 +185,7 @@ namespace NextBot.Commands
             {
                 switch (commandText)
                 {
-                    case "بازدهی پرتفوی مرکب تا تاریخ دلخواه":
+                    case "بازدهی پرتفوی مرکب تا تاریخ دلخواه📆":
                         person.CommandLevel = 5;
                         await chatService.SendMessage(chatId, message: "محاسبه بازدهی تا تاریخ مورد نظر > تاریخ مورد نظر را انتخاب کنید :", CreateCalendar());
                         break;
@@ -193,7 +199,7 @@ namespace NextBot.Commands
                             await chatService.SendMessage(chatId, message: root.ErrorMessageFa, Markup.PortfolioSetSelectRKM);
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReturnPortfolioSetTypesRKM);
                         break;
-                    case "بازگشت":
+                    case "🔙":
                         person.CommandLevel = 3;
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.PortfolioSetSelectRKM);
                         break;
@@ -243,31 +249,19 @@ namespace NextBot.Commands
                         await chatService.SendMessage(chatId: chatId, message: "نوع بازدهی را مشخص کنید :", Markup.ReturnIndexTypesRKM);
                         break;
                     case "صندوق سهامی":
-                        var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/fund/etf/all");
-                        var etfs = await System.Text.Json.JsonSerializer.DeserializeAsync<Models.ETF.All.Rootobject>(await streamTask);
-
-                        var symbols = new List<String>();
-                        foreach (var etf in etfs.responseObject)
-                        {
-                            symbols.Add(etf.symbol);
-                        }
-
-                        var smartDictionary = new SmartDDictionary<string>(m => m, symbols);
-
-                        var buttons = smartDictionary.Search(commandText, 50).Select(x => new[] { new KeyboardButton(x) }).ToArray();
-
-                        await chatService.SendMessage(chatId, message: "صندوق مورد نظر را از گزینه های موجود انتخاب کنید :", rkm: new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
+                        await chatService.SendMessage(chatId, message: "تاریخ پایان محاسبه بازدهی را انتخاب کنید", rkm: CreateCalendar());
                         person.CommandLevel = 12;
                         break;
                     case "پرتفوی مرکب":
                         person.CommandLevel = 14;
                         await chatService.SendMessage(chatId: chatId, message: "مقایسه با پرتفوی مورد نظر تا تاریخ مشخص -> آی دی پرتفوی مرکب مورد نظر برای مقایسه وارد نمایید :");
                         break;
-                    case "بازگشت":
+                    case "🔙":
                         person.CommandLevel = 3;
-                        await chatService.SendMessage(chatId: chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReturnOrComparisonRKM);
+                        await chatService.SendMessage(chatId: chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.PortfolioSetSelectRKM);
                         break;
                     default:
+                        await chatService.SendMessage(chatId: chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ComparisonSetTypesRKM);
                         break;
                 }
             }
@@ -275,7 +269,7 @@ namespace NextBot.Commands
             {
                 switch (commandText)
                 {
-                    case "بازدهی شاخص تا تاریخ دلخواه":
+                    case "بازدهی شاخص تا تاریخ دلخواه📆":
                         person.CommandLevel = 11;
                         await chatService.SendMessage(chatId: chatId, message: "تاریخ مورد نظر خود را انتخاب کنید :", CreateCalendar());
                         break;
@@ -288,9 +282,10 @@ namespace NextBot.Commands
                             await ShowIndextReturnInClassicNextSelect(chatService, person, streamTask_);
                         }
                         Thread.Sleep(500);
+                        person.CommandLevel = 10;
                         await chatService.SendMessage(chatId: chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ReturnIndexTypesRKM);
                         break;
-                    case "بازگشت":
+                    case "🔙":
                         person.CommandLevel = 9;
                         await chatService.SendMessage(chatId: chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ComparisonSetTypesRKM);
                         break;
@@ -319,25 +314,9 @@ namespace NextBot.Commands
             }
             else if (person.CommandLevel == 12)
             {
-                var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/fund/etf/all");
-                var etfs = await System.Text.Json.JsonSerializer.DeserializeAsync<Models.ETF.All.Rootobject>(await streamTask);
-                if (SaveTickerKeyForETF(person, commandText, etfs))
-                {
-                    await chatService.SendMessage(chatId, message: "تاریخ پایان محاسبه بازدهی را انتخاب کنید", rkm: CreateCalendar());
-                    person.CommandLevel = 13;
-                }
-                else
-                {
-                    person.CommandLevel = 9;
-                    await chatService.SendMessage(chatId, message: "ورودی اشتباه ! از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ComparisonSetTypesRKM);
-
-                }
-            }
-            else if (person.CommandLevel == 13)
-            {
                 var date = await CheckAndGetDate(chatService, query);
                 if (date != null)
-                { 
+                {
                     var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolioSet/return/{person.PortfolioIdForClassicNextSelect}/{date}");
                     await ShowReturnAndComparisonInPortfolioSet(chatService, person, streamTask, person.PortfolioIdForClassicNextSelect);
 
@@ -346,14 +325,13 @@ namespace NextBot.Commands
                     var etfs = await System.Text.Json.JsonSerializer.DeserializeAsync<Models.ETF.Specific.Rootobject>(await streamTask_);
                     if (etfs.responseObject != null)
                     {
-                        foreach (var etf in etfs.responseObject)
+                        StringBuilder str = new();
+                        for (int i = 0; i < etfs.responseObject.Length; i++)
                         {
-                            if (etf.fund.tickerKey == person.TickerKeyForStock)
-                            {
-                                await chatService.SendMessage(chatId: person.ChatId, message: $"بازدهی صندوق  {etf.fund.symbol} : " + "\n" + Math.Round(Convert.ToDecimal(etf.returnValue) * 100, 1) + " %");
-                                break;
-                            }
+                            var etf = etfs.responseObject.ElementAt(i);
+                            str.Append($"{i + 1}. {etf.fund.symbol} : " + "\n" + Math.Round(Convert.ToDecimal(etf.returnValue) * 100, 1) + " %" + "\n");
                         }
+                        await chatService.SendMessage(chatId: person.ChatId, message: str.ToString());
                     }
                     else
                     {
@@ -364,6 +342,9 @@ namespace NextBot.Commands
                     await chatService.SendMessage(chatId: chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.ComparisonSetTypesRKM);
                     person.CommandLevel = 9;
                 }
+            }
+            else if (person.CommandLevel == 13)
+            {
             }
             else if (person.CommandLevel == 14)
             {
@@ -387,7 +368,7 @@ namespace NextBot.Commands
                 }
                 _context.Entry(person).State = EntityState.Modified;
             }
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return _context;
         }
     }

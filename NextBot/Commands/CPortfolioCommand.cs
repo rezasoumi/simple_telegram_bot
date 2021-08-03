@@ -1,22 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.Web.CodeGeneration.Contracts.Messaging;
 using NextBot.Handlers;
 using NextBot.Models;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot.Args;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NextBot.Commands
 {
-    public class CPortfolio : StaticFunctions, IBotCommand
+    public class CPortfolioCommand : StaticFunctions, IBotCommand
     {
         private readonly IServiceProvider _serviceProvider;
         private MyDbContext _context;
@@ -27,14 +20,14 @@ namespace NextBot.Commands
 
         public bool InternalCommand => false;
 
-        public CPortfolio(IServiceProvider serviceProvider)
+        public CPortfolioCommand(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
             var scope = serviceProvider.CreateScope();
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
-        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, int userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
+        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
             person.CommandState = 2;
@@ -44,6 +37,7 @@ namespace NextBot.Commands
             {
                 await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.CreateTypesRKM);
                 person.CommandLevel = 1;
+                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 1)
             {
@@ -64,7 +58,7 @@ namespace NextBot.Commands
                     case "ساخت با ریسک و حداقل و حداکثر و تاریخ شمسی مشخص":
                         person.CreateSmartPortfolioType = 4;
                         break;
-                    case "بازگشت":
+                    case "🔙":
                         person.CommandState = 0;
                         person.CommandLevel = 0;
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.MainMenuRKM);
@@ -88,14 +82,14 @@ namespace NextBot.Commands
                     await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
                                                             messageId: query.CallbackQuery.Message.MessageId,
                                                             newText: "پرتفوی مورد نظر ذخیره نمی شود");
-                    person.SmartPortfolioSetting.Save = false;
+                    person.Save = false;
                 }
                 else if (commandText == "بلی")
                 {
                     await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
                                                             messageId: query.CallbackQuery.Message.MessageId,
                                                             newText: "پرتفوی مورد نظر ذخیره می شود");
-                    person.SmartPortfolioSetting.Save = true;
+                    person.Save = true;
                 }
                 if (person.CreateSmartPortfolioType == 0)
                 {
@@ -117,42 +111,42 @@ namespace NextBot.Commands
                     await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
                                                     messageId: query.CallbackQuery.Message.MessageId,
                                                     newText: "درجه ریسک : بدون ریسک");
-                    person.SmartPortfolioSetting.RiskRate = 0;
+                    person.RiskRate = 0;
                 }
                 else if (commandText == "ریسک خیلی کم")
                 {
                     await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
                                                     messageId: query.CallbackQuery.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک خیلی کم");
-                    person.SmartPortfolioSetting.RiskRate = 1;
+                    person.RiskRate = 1;
                 }
                 else if (commandText == "ریسک کم")
                 {
                     await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
                                                     messageId: query.CallbackQuery.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک کم");
-                    person.SmartPortfolioSetting.RiskRate = 2;
+                    person.RiskRate = 2;
                 }
                 else if (commandText == "ریسک متوسط")
                 {
                     await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
                                                     messageId: query.CallbackQuery.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک متوسط");
-                    person.SmartPortfolioSetting.RiskRate = 3;
+                    person.RiskRate = 3;
                 }
                 else if (commandText == "ریسک زیاد")
                 {
                     await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
                                                     messageId: query.CallbackQuery.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک زیاد");
-                    person.SmartPortfolioSetting.RiskRate = 4;
+                    person.RiskRate = 4;
                 }
                 else if (commandText == "ریسک خیلی زیاد")
                 {
                     await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
                                                     messageId: query.CallbackQuery.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک خیلی زیاد");
-                    person.SmartPortfolioSetting.RiskRate = 5;
+                    person.RiskRate = 5;
                 }
                 if (person.CreateSmartPortfolioType == 1)
                 {
@@ -182,7 +176,7 @@ namespace NextBot.Commands
                         person.CommandLevel = 5;
                     }
                 }
-                _context.Entry(person).State = EntityState.Modified;
+            _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 5)
             {
@@ -206,7 +200,7 @@ namespace NextBot.Commands
                 var date = await CheckAndGetDate(chatService, query);
                 if (date != null)
                 {
-                    person.SmartPortfolioSetting.ProductionDate = date;
+                    person.ProductionDate = date;
                     SendSmartPortfolioToUser(chatService, person, 4);
                     person.CommandLevel = 1;
                 }
@@ -221,13 +215,14 @@ namespace NextBot.Commands
             return _context;
         }
 
-        private static bool GetMinimumStockWeight(IChatService chatService, Person person, string text)
+        private bool GetMinimumStockWeight(IChatService chatService, Person person, string text)
         {
             try
             {
                 if (double.Parse(text) > 0.01 && double.Parse(text) < 1)
                 {
-                    person.SmartPortfolioSetting.MinimumStockWeight = double.Parse(text);
+                    person.MinimumStockWeight = double.Parse(text);
+                    _context.SaveChanges();
                     return true;
                 }
                 else
@@ -240,13 +235,14 @@ namespace NextBot.Commands
             return false;
         }
 
-        private static bool GetMaximumStockWeight(IChatService chatService, Person person, string text)
+        private bool GetMaximumStockWeight(IChatService chatService, Person person, string text)
         {
             try
             {
                 if (double.Parse(text) > 0.05 && double.Parse(text) < 1)
                 {
-                    person.SmartPortfolioSetting.MaximumStockWeight = double.Parse(text);
+                    person.MaximumStockWeight = double.Parse(text);
+                    _context.SaveChanges();
                     return true;
                 }
                 else

@@ -34,7 +34,7 @@ namespace NextBot.Commands
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
-        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, int userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
+        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
             person.CommandState = 1;
@@ -88,11 +88,11 @@ namespace NextBot.Commands
             {
                 switch (commandText)
                 {
-                    case "محاسبه بازدهی":
+                    case "محاسبه بازدهی📈":
                         person.CommandLevel = 4;
                         await chatService.SendMessage(chatId, message: "تاریخ شروع محاسبه بازدهی را انتخاب کنید :", CreateCalendar());
                         break;
-                    case "بازگشت":
+                    case "🔙":
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.MainMenuRKM);
                         person.CommandLevel = 0;
                         person.CommandState = 0;

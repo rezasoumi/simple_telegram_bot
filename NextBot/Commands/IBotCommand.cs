@@ -10,6 +10,6 @@ namespace NextBot.Commands
         string Description { get; }
         bool InternalCommand { get; }
 
-        Task<MyDbContext> Execute(IChatService chatService, long chatId, int userId, int messageId, string? commandText, CallbackQueryEventArgs? query);
+        Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQueryEventArgs? query);
     }
 }

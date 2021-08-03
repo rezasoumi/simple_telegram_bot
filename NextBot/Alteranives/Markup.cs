@@ -2,7 +2,7 @@
 
 namespace NextBot.Handlers
 {
-    public class Markup
+    public class Markup : StaticFunctions
     {
         public static readonly ReplyKeyboardMarkup MainMenuRKM = new(
            new KeyboardButton[][]
@@ -23,8 +23,8 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup SelectOrCreateRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "تشکیل", "انتخاب" },
+                    new KeyboardButton[] { "🔙" },
+                    new KeyboardButton[] { "تشکیل💰", "انتخاب🔎" },
             },
             resizeKeyboard: true
         );
@@ -32,7 +32,7 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup SmartOrHandMadeRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
+                    new KeyboardButton[] { "🔙" },
                     new KeyboardButton[] { "هوشمند", "دستی" },
             },
             resizeKeyboard: true
@@ -41,8 +41,8 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup ReturnOrComparisonRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "محاسبه بازدهی", "مقایسه", "حذف پرتفوی" },
+                    new KeyboardButton[] { "🔙" },
+                    new KeyboardButton[] { "محاسبه بازدهی📈", "مقایسه📊", "حذف پرتفوی❌" },
             },
             resizeKeyboard: true
         );
@@ -50,7 +50,7 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup SelectTypesRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
+                    new KeyboardButton[] { "🔙" },
                     new KeyboardButton[] { "انتخاب بر اساس وارد کردن آی دی پرتفوی مورد نظر", "انتخاب بر اساس گذر میان پرتفوی ها" },
             },
             resizeKeyboard: true
@@ -59,8 +59,8 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup ReturnPortfolioTypesRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "بازدهی پرتفوی تا امروز", "بازدهی پرتفوی تا تاریخ دلخواه" },
+                    new KeyboardButton[] { "🔙" },
+                    new KeyboardButton[] { "بازدهی پرتفوی تا امروز", "بازدهی پرتفوی تا تاریخ دلخواه📆" },
             },
             resizeKeyboard: true
         );
@@ -68,8 +68,8 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup ReturnPortfolioSetTypesRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "بازدهی پرتفوی مرکب تا امروز", "بازدهی پرتفوی مرکب تا تاریخ دلخواه" },
+                    new KeyboardButton[] { "🔙" },
+                    new KeyboardButton[] { "بازدهی پرتفوی مرکب تا امروز", "بازدهی پرتفوی مرکب تا تاریخ دلخواه📆" },
             },
             resizeKeyboard: true
         );
@@ -77,7 +77,7 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup ComparisonTypesRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
+                    new KeyboardButton[] { "🔙" },
                     new KeyboardButton[] { "شاخص", "صندوق سهامی", "پرتفوی" },
             },
             resizeKeyboard: true
@@ -86,7 +86,7 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup ComparisonSetTypesRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
+                    new KeyboardButton[] { "🔙" },
                     new KeyboardButton[] { "شاخص", "صندوق سهامی", "پرتفوی مرکب" },
             },
             resizeKeyboard: true
@@ -95,8 +95,8 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup ReturnIndexTypesRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "بازدهی شاخص تا امروز", "بازدهی شاخص تا تاریخ دلخواه" },
+                    new KeyboardButton[] { "🔙" },
+                    new KeyboardButton[] { "بازدهی شاخص تا امروز", "بازدهی شاخص تا تاریخ دلخواه📆" },
             },
             resizeKeyboard: true
         );  
@@ -104,7 +104,7 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup CreateTypesRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
+                    new KeyboardButton[] { "🔙" },
                     new KeyboardButton[] { "ساخت با پارامتر های پیش فرض" },
                     new KeyboardButton[] { "ساخت با ریسک مشخص" },
                     new KeyboardButton[] { "ساخت با ریسک و حداقل وزن مشخص" },
@@ -117,8 +117,8 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup StockReturnRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "محاسبه بازدهی" },
+                    new KeyboardButton[] { "🔙" },
+                    new KeyboardButton[] { "محاسبه بازدهی📈" },
             },
             resizeKeyboard: true
         );
@@ -126,9 +126,9 @@ namespace NextBot.Handlers
         public static readonly ReplyKeyboardMarkup PortfolioSetSelectRKM = new(
             new KeyboardButton[][]
             {
-                    new KeyboardButton[] { "بازگشت" },
-                    new KeyboardButton[] { "مقایسه", "محاسبه بازدهی", "حذف پرتفوی", "افزودن پرتفوی" },
-                    new KeyboardButton[] { "حذف پرتفوی مرکب" },
+                    new KeyboardButton[] { "🔙" },
+                    new KeyboardButton[] { "مقایسه📊", "محاسبه بازدهی📈", "حذف پرتفوی➖", "افزودن پرتفوی➕" },
+                    new KeyboardButton[] { "حذف پرتفوی مرکب❌" },
             },
             resizeKeyboard: true
         );

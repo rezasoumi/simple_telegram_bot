@@ -14,6 +14,7 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using System.IO;
 
 namespace NextBot
 {
@@ -69,6 +70,67 @@ namespace NextBot
                 _logger.LogTrace("No command was specified");
                 return;
             }
+            await CheckRegistering(sender, e);
+        }
+
+        private async Task CheckRegistering(object sender, MessageEventArgs e)
+        {
+            try
+            {
+                var channel = new ChatId(-1001391973136);
+                var chatMember1 = await _botClient.GetChatMemberAsync(channel, Convert.ToInt32(e.Message.Chat.Id));
+
+                // Creator Or Member Or Left
+                if (chatMember1.Status.ToString() != "Left")
+                {
+                    RegisterWithChatId(sender, e);
+                    await OnMessageAfterRegistering(sender, e);
+                }
+                else
+                {
+                    // Joining to our channel message
+                    await _botClient.SendTextMessageAsync(
+                            chatId: e.Message.Chat,
+                            text: $"سلام {e.Message.Chat.FirstName} عزیز" +
+                            $"\nبرای استفاده از ربات ابتدا باید در کانال نکست عضو بشید." +
+                            $"\nبعد از عضویت، مجدد پیام ارسال کنید تا ربات برای شما فعال شود."
+                        );
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        private void RegisterWithChatId(object sender, MessageEventArgs messageEventArgs)
+        {
+            var person1 = _context.People.Where(p => p.ChatId == messageEventArgs.Message.Chat.Id);
+
+            Person newPerson;
+            if (!person1.Any())
+            {
+                newPerson = new Person()
+                {
+                    ChatId = messageEventArgs.Message.Chat.Id
+                };
+                _context.People.Add(newPerson);
+                _context.SaveChanges();
+            }
+        }
+
+        private async Task OnMessageAfterRegistering(object sender, MessageEventArgs e)
+        {
+            _logger.Log(LogLevel.Information, $"{e.Message.Chat.Username} --> {e.Message.Text} at {e.Message.Date}", DateTime.UtcNow);
+            try
+            {
+                using StreamWriter file = new("log.txt", append: true);
+                await file.WriteLineAsync($"{e.Message.Chat.Username} --> {e.Message.Text} at {e.Message.Date}");
+            }
+            catch (Exception)
+            {
+                _logger.Log(LogLevel.Error, $"log cannot append to log.txt", DateTime.UtcNow);
+            }
 
             if (e.Message.Entities?.Count(x => x.Type == MessageEntityType.BotCommand) > 1)
             {
@@ -83,7 +145,7 @@ namespace NextBot
             var person = _context.People.FirstOrDefault(p => p.ChatId == e.Message.Chat.Id);
 
             if (e.Message.Entities?.SingleOrDefault().Type == MessageEntityType.BotCommand)
-            { 
+            {
                 var botCommand = e.Message.Entities.Single(x => x.Type == MessageEntityType.BotCommand);
                 var command = e.Message.Text.Substring(botCommand.Offset, botCommand.Length);
                 command = command.Replace(await BotUserName(), string.Empty);
@@ -110,18 +172,18 @@ namespace NextBot
                             await _botClient.SendTextMessageAsync(person.ChatId, "نام سهم مورد نظر را وارد کنید :");
                             break;
                         case "صنعت":
-                            //"نام صنعت مورد نظر را وارد کنید :"
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "هنوز پیاده سازی نشده است. از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
                             break;
                         case "پرتفوی مرکب":
                             person.CommandLevel = 1;
-                            await _botClient.SendTextMessageAsync(chatId: person.ChatId,text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
                             break;
                         case "پرتفوی":
                             person.CommandLevel = 2;
-                            await _botClient.SendTextMessageAsync(chatId: person.ChatId,text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
                             break;
                         default:
-                            await _botClient.SendTextMessageAsync(chatId: person.ChatId,text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
+                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
                             break;
                     }
                 }
@@ -129,7 +191,7 @@ namespace NextBot
                 {
                     switch (e.Message.Text)
                     {
-                        case "تشکیل":
+                        case "تشکیل💰":
                             ChatMessage?.Invoke(this, new ChatMessageEventArgs
                             {
                                 Text = e.Message.Text.Replace("/cportfolioset", string.Empty).Trim(),
@@ -141,12 +203,12 @@ namespace NextBot
                             Thread.Sleep(500);
                             await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از بین گزینه های زیر انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
                             break;
-                        case "انتخاب":
+                        case "انتخاب🔎":
                             person.CommandState = 3;
                             person.CommandLevel = 1;
                             await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", replyMarkup: Markup.SelectTypesRKM);
                             break;
-                        case "بازگشت":
+                        case "🔙":
                             person.CommandLevel = 0;
                             await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
                             break;
@@ -159,17 +221,17 @@ namespace NextBot
                 {
                     switch (e.Message.Text)
                     {
-                        case "تشکیل":
+                        case "تشکیل💰":
                             person.CommandState = 2;
                             person.CommandLevel = 1;
                             await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.CreateTypesRKM);
                             break;
-                        case "انتخاب":
+                        case "انتخاب🔎":
                             person.CommandState = 5;
                             person.CommandLevel = 1;
                             await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", replyMarkup: Markup.SelectTypesRKM);
                             break;
-                        case "بازگشت":
+                        case "🔙":
                             person.CommandLevel = 0;
                             await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
                             break;

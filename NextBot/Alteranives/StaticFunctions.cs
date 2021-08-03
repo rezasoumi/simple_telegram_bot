@@ -17,6 +17,14 @@ namespace NextBot.Handlers
     public class StaticFunctions
     {
         public static readonly HttpClient client = new();
+        public static Emoji backEmoji = new(0x1F519);
+        public static Emoji comparisonEmoji = new(0x1F4CA);
+        public static Emoji returnEmoji = new(0x1F4C8);
+        public static Emoji moneyBagEmoji = new(0x1F4B0);
+        public static Emoji plusSignEmoji = new(0x2795);
+        public static Emoji minusSignEmoji = new(0x2796);
+        public static Emoji crossMarkEmoji = new(0x274C);
+        public static Emoji calendarEmoji = new(0x1F4C6);
 
         public InlineKeyboardMarkup CreateCalendar(int year = 0, int month = 0)
         {
@@ -217,7 +225,7 @@ namespace NextBot.Handlers
             }
             list_.Reverse();
 
-            var list = new List<string> { "قبلی" };
+            var list = new List<string> { "قبلی⬆️" };
             for (long i = person.ClassicNextSelectState; i < Math.Min(20 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
             {
                 list.Add($"پرتفوی شماره {list_.ElementAt(Convert.ToInt32(i))}");
@@ -226,7 +234,7 @@ namespace NextBot.Handlers
             person.ClassicNextSelectState += 20;
             if (root.ResponseObject.Length - person.ClassicNextSelectState > 0)
             {
-                list.Add("بعدی");
+                list.Add("بعدی⬇️");
             }
             var buttons = list.Select(x => new[] { new KeyboardButton(x) }).ToArray();
             await chatService.SendMessage(chatId: person.ChatId, message: "پرتفوی مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
@@ -433,7 +441,7 @@ namespace NextBot.Handlers
             }
             list_.Reverse();
 
-            var list = new List<string> { "قبلی" };
+            var list = new List<string> { "قبلی⬆️" };
             for (long i = person.ClassicNextSelectState; i < Math.Min(20 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
             {
                 list.Add($"پرتفوی مرکب شماره {list_.ElementAt(Convert.ToInt32(i))}");
@@ -442,7 +450,7 @@ namespace NextBot.Handlers
             person.ClassicNextSelectState += 20;
             if (root.ResponseObject.Length - person.ClassicNextSelectState > 0)
             {
-                list.Add("بعدی");
+                list.Add("بعدی⬇️");
             }
             var buttons = list.Select(x => new[] { new KeyboardButton(x) }).ToArray();
             await chatService.SendMessage(person.ChatId, message: "پرتفوی مرکب مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
@@ -486,15 +494,15 @@ namespace NextBot.Handlers
             await chatService.SendMessage(person.ChatId, message: "در حال ساخت پرتفوی مورد نظر ...");
             System.Threading.Tasks.Task<Stream> streamTask = null;
             if (s == 0)
-                await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}"));
+                await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}"));
             else if (s == 1)
-                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}");
+                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}");
             else if (s == 2)
-                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}");
+                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}");
             else if (s == 3)
-                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}");
+                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}/{person.MaximumStockWeight}");
             else if (s == 4)
-                await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.SmartPortfolioSetting.Save}/{person.SmartPortfolioSetting.RiskRate}/{person.SmartPortfolioSetting.MinimumStockWeight}/{person.SmartPortfolioSetting.MaximumStockWeight}/{person.SmartPortfolioSetting.ProductionDate}"));
+                await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}/{person.MaximumStockWeight}/{person.ProductionDate}"));
 
             var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextFormation.RootObject>(await streamTask);
 

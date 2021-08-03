@@ -20,7 +20,7 @@ namespace NextBot
         private readonly ILogger<Bot> _logger;
         private MyDbContext _context;
 
-        public const string UnknownCommandMessage = "Unknown command. Try /help for a list of available commands.";
+        public const string UnknownCommandMessage = "متاسفانه چنین دستوری وجود ندارد.";
 
         public Bot(IChatService chatService, IServiceProvider serviceProvider, ILogger<Bot> logger)
         {
@@ -75,18 +75,33 @@ namespace NextBot
                 var command = _serviceProvider.GetServices<IBotCommand>().SingleOrDefault(x => $"/{x.Command}".Equals(chatMessageArgs.Command, StringComparison.InvariantCultureIgnoreCase));
                 if (command != null)
                 {
-                    _context = await command.Execute(chatService,
-                        chatMessageArgs.ChatId,
-                        chatMessageArgs.UserId,
-                        chatMessageArgs.MessageId,
-                        chatMessageArgs.Text,
-                        null
-                        );
+                    try
+                    {
+                        _context = await command.Execute(chatService,
+                            chatMessageArgs.ChatId,
+                            chatMessageArgs.UserId,
+                            chatMessageArgs.MessageId,
+                            chatMessageArgs.Text,
+                            null
+                            );
+
+                    }
+                    catch (Exception)
+                    {
+                        await chatService.SendMessage(chatMessageArgs.ChatId, "خطایی رخ داده است. لطفا مجددا تلاش کنید.");
+                    }
                 }
                 else
                 {
-                    _logger.LogTrace("Unknown command was sent");
-                    await chatService.SendMessage(chatMessageArgs.ChatId, UnknownCommandMessage, Markup.MainMenuRKM);
+                    if (chatMessageArgs.Command == "/start")
+                    {
+                        await chatService.SendMessage(chatMessageArgs.ChatId, "سلام به نکست بات خوش آمدید. منوی اصلی را در پایین صفحه مشاهده می کنید. همچنین برای دریافت آموزش بات روی /help می توانید کلیک کنید. با تشکر ", Markup.MainMenuRKM);
+                    }
+                    else
+                    {
+                        _logger.LogTrace("Unknown command was sent");
+                        await chatService.SendMessage(chatMessageArgs.ChatId, UnknownCommandMessage, Markup.MainMenuRKM);
+                    }
                 }
             }
         }
@@ -113,13 +128,20 @@ namespace NextBot
 
                 if (command != null && !string.IsNullOrEmpty(commandText))
                 {
-                    _context = await command.Execute(chatService,
-                        query.CallbackQuery.Message.Chat.Id,
-                        query.CallbackQuery.From.Id,
-                        query.CallbackQuery.Message.MessageId,
-                        query.CallbackQuery.Data?.Replace(commandText, string.Empty).Trim(),
-                        query
-                        );
+                    try
+                    {
+                        _context = await command.Execute(chatService,
+                            query.CallbackQuery.Message.Chat.Id,
+                            query.CallbackQuery.From.Id,
+                            query.CallbackQuery.Message.MessageId,
+                            query.CallbackQuery.Data?.Replace(commandText, string.Empty).Trim(),
+                            query
+                            );
+                    }
+                    catch (Exception)
+                    {
+                        await chatService.SendMessage(query.CallbackQuery.Message.Chat.Id, "خطایی رخ داده است. لطفا مجددا تلاش کنید.");
+                    }
                 }
                 else
                 {

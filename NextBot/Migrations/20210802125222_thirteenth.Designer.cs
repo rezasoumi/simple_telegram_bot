@@ -2,15 +2,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NextBot.Models;
 
 namespace NextBot.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210802125222_thirteenth")]
+    partial class thirteenth
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,13 +42,34 @@ namespace NextBot.Migrations
                     b.Property<int>("CreateSmartPortfolioType")
                         .HasColumnType("int");
 
+                    b.Property<long>("PortfolioIdForClassicNextSelect")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StartDateWaitingForEndDate")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TickerKeyForStock")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("People");
+                });
+
+            modelBuilder.Entity("NextBot.Models.SmartPortfolioSetting", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
                     b.Property<double>("MaximumStockWeight")
                         .HasColumnType("float");
 
                     b.Property<double>("MinimumStockWeight")
                         .HasColumnType("float");
 
-                    b.Property<long>("PortfolioIdForClassicNextSelect")
+                    b.Property<long>("PersonId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("ProductionDate")
@@ -58,15 +81,28 @@ namespace NextBot.Migrations
                     b.Property<bool>("Save")
                         .HasColumnType("bit");
 
-                    b.Property<string>("StartDateWaitingForEndDate")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TickerKeyForStock")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.ToTable("People");
+                    b.HasIndex("PersonId")
+                        .IsUnique();
+
+                    b.ToTable("SmartPortfolioSetting");
+                });
+
+            modelBuilder.Entity("NextBot.Models.SmartPortfolioSetting", b =>
+                {
+                    b.HasOne("NextBot.Models.Person", "Person")
+                        .WithOne("SmartPortfolioSetting")
+                        .HasForeignKey("NextBot.Models.SmartPortfolioSetting", "PersonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Person");
+                });
+
+            modelBuilder.Entity("NextBot.Models.Person", b =>
+                {
+                    b.Navigation("SmartPortfolioSetting");
                 });
 #pragma warning restore 612, 618
         }
