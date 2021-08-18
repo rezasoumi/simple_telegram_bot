@@ -28,7 +28,6 @@ namespace NextBot
         private bool disposedValue;
         public MyDbContext _context;
         public event EventHandler<ChatMessageEventArgs>? ChatMessage;
-        //public event EventHandler<CallbackQueryEventArgs>? Callback;
         public event EventHandler<CallbackQuery>? Callback;
         public UpdateType[] AllowedUpdates => null;
 
@@ -204,8 +203,8 @@ namespace NextBot
                                 MessageId = update.Message.MessageId,
                                 Command = "/cportfolioset"
                             });
-                            Thread.Sleep(500);
-                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از بین گزینه های زیر انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
+                            //Thread.Sleep(800);
+                            //await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "از بین گزینه های زیر انتخاب کنید :", replyMarkup: Markup.SelectOrCreateRKM);
                             break;
                         case "انتخاب🔎":
                             person.CommandState = 3;

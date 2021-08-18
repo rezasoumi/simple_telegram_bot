@@ -49,6 +49,7 @@ namespace NextBot.Commands
                 }
                 await chatService.SendMessage(chatId, message: str.ToString());
                 Thread.Sleep(700);
+                await chatService.SendMessage(chatId, "پرتفوی مرکب ساخته شد. در قسمت انتخاب پرتفوی مرکب قابل مشاهده است.");
             }
             else
             {
