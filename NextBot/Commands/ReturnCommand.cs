@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using NextBot.Alteranives;
 using NextBot.Handlers;
 using NextBot.Models;
 using NextBot.SmartSearch;
+using QuickChart;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Telegram.Bot.Args;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NextBot.Commands
@@ -34,16 +35,15 @@ namespace NextBot.Commands
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
-        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
+        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQuery? query)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
             person.CommandState = 1;
-            _context.Entry(person).State = EntityState.Modified;
+
             if (person.CommandLevel == 0)
             {
-                await chatService.SendMessage(chatId, message: "نام سهم مورد نظر را وارد کنید :");
+                await chatService.SendMessage(chatId, message: "نام سهم مورد نظر (یا بخشی از آن) را وارد کنید :");
                 person.CommandLevel = 1;
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 1)
             {
@@ -65,14 +65,15 @@ namespace NextBot.Commands
 
                 await chatService.SendMessage(chatId, message: "سهم مورد نظر را از گزینه های موجود انتخاب کنید :", rkm: new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
                 person.CommandLevel = 2;
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 2)
             {
                 var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/industry/stocks");
                 var industries = await System.Text.Json.JsonSerializer.DeserializeAsync<List<IndustryStocks.Industry>>(await streamTask);
-                if (SaveTickerKey(person, commandText, industries))
+                var tickerKey = SaveTickerKey(person, commandText, industries);
+                if (tickerKey != -1)
                 {
+                    person.TickerKeyForStock = tickerKey;
                     await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
                     person.CommandLevel = 3;
                 }
@@ -82,15 +83,18 @@ namespace NextBot.Commands
                     person.CommandLevel = 1;
                 }
 
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 3)
             {
                 switch (commandText)
                 {
-                    case "محاسبه بازدهی📈":
+                    case "محاسبه بازدهی تا تاریخ دلخواه📈":
                         person.CommandLevel = 4;
                         await chatService.SendMessage(chatId, message: "تاریخ شروع محاسبه بازدهی را انتخاب کنید :", CreateCalendar());
+                        break;
+                    case "محاسبه بازدهی تا امروز📈":
+                        await chatService.SendMessage(chatId, message: "تاریخ شروع محاسبه بازدهی را انتخاب کنید :", CreateCalendar());
+                        person.CommandLevel = 6;
                         break;
                     case "🔙":
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.MainMenuRKM);
@@ -101,31 +105,21 @@ namespace NextBot.Commands
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
                         break;
                 }
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 4)
             {
-                if (query != null)
+                var date = await CheckAndGetDate(chatService, query);
+                if (date != null)
                 {
-                    var m = await ProcessCalendar(chatService, query);
-                    if (m != null)
-                    {
-                        string date;
-                        if (m.Month.ToString().Length == 1 && m.Day.ToString().Length == 1)
-                            date = $"{m.Year}0{m.Month}0{m.Day}";
-                        else if (m.Month.ToString().Length == 1 && m.Day.ToString().Length != 1)
-                            date = $"{m.Year}0{m.Month}{m.Day}";
-                        else if (m.Month.ToString().Length != 1 && m.Day.ToString().Length == 1)
-                            date = $"{m.Year}{m.Month}0{m.Day}";
-                        else
-                            date = $"{m.Year}{m.Month}{m.Day}";
-
-                        person.StartDateWaitingForEndDate = date;
-                        await chatService.SendMessage(chatId, message: "تاریخ پایان محاسبه بازدهی را انتخاب کنید :", CreateCalendar());
-                        person.CommandLevel = 5;
-                    }
+                    person.StartDateWaitingForEndDate = date;
+                    await chatService.SendMessage(chatId, message: "تاریخ پایان محاسبه بازدهی را انتخاب کنید :", CreateCalendar());
+                    person.CommandLevel = 5;
                 }
-                _context.Entry(person).State = EntityState.Modified;
+                if (query == null)
+                {
+                    person.CommandLevel = 3;
+                    await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
+                }
             }
             else if (person.CommandLevel == 5)
             {
@@ -142,18 +136,116 @@ namespace NextBot.Commands
                         await chatService.SendMessage(chatId, message: "بازدهی سهام مورد نظر در این بازه زمانی :" + "\n" + Math.Round(resObj.ResponseObject.First() * 100, 1) + " %");
                     else
                         await chatService.SendMessage(chatId, message: resObj.ErrorMessageFa);
+                    
+                    var qc = new Chart();
+                    qc.Width = 800;
+                    qc.Height = 500;
+                    string configbuilder = await CraeteJsonForGetChart(strContent);
+                    if (configbuilder != null)
+                    {
+                        qc.Config = configbuilder;
+                        await chatService.SendPhotoAsync(chatId, qc.GetUrl());
+                    }
+
                     Thread.Sleep(200);
                     await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
                     person.CommandLevel = 3;
                 }
+                if (query == null)
+                {
+                    person.CommandLevel = 3;
+                    await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
+                }
+            }
+            else if (person.CommandLevel == 6)
+            {
+                var date = await CheckAndGetDate(chatService, query);
+                if (date != null)
+                {
+                    var dates = commandText.Split(" ");
+                    var parameter = new StockReturn.StockReturnParameterWithEndDate() { BeginDatePersian = int.Parse(date), TickerKeys = new int[] { person.TickerKeyForStock } };
+                    var json = JsonConvert.SerializeObject(parameter);
+                    var strContent = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await client.PostAsync("http://192.168.95.88:30907/api/stock/returns", strContent).Result.Content.ReadAsStringAsync();
+                    var resObj = JsonConvert.DeserializeObject<StockReturn.StockReturnRoot>(response);
+                    if (resObj.IsSuccessful)
+                        await chatService.SendMessage(chatId, message: "بازدهی سهام مورد نظر در این بازه زمانی :" + "\n" + Math.Round(resObj.ResponseObject.First() * 100, 1) + " %");
+                    else
+                        await chatService.SendMessage(chatId, message: resObj.ErrorMessageFa);
+
+                    var qc = new Chart();
+                    qc.Width = 800;
+                    qc.Height = 500;
+                    string configbuilder = await CraeteJsonForGetChart(strContent);
+                    if (configbuilder != null)
+                    {
+                        qc.Config = configbuilder;
+                        await chatService.SendPhotoAsync(chatId, qc.GetUrl());
+                    }
+                    Thread.Sleep(200);
+                    await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
+                    person.CommandLevel = 3;
+                }
+                if (query == null)
+                {
+                    person.CommandLevel = 3;
+                    await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", rkm: Markup.StockReturnRKM);
+                }
             }
             else
             {
-                await chatService.SendMessage(chatId, "TODO: Create a todo command");
-                _context.Entry(person).State = EntityState.Modified;
+                person.CommandLevel = 1;
             }
             _context.SaveChanges();
             return _context;
+        }
+
+        private static async Task<string> CraeteJsonForGetChart(StringContent strContent)
+        {
+            var responseForChart = await client.PostAsync("http://192.168.95.88:30907/api/stock/normalPrices", strContent).Result.Content.ReadAsStringAsync(); ;
+            var resObjForChart = JsonConvert.DeserializeObject<NormalPrices.RootObjectStock>(responseForChart);
+            if (resObjForChart.isSuccessful)
+            {
+                var configbuilder = @"{
+                        'type': 'line',
+                        'data': {
+					        'labels': [";
+
+                var length = (int)Math.Floor((decimal)resObjForChart.responseObject.datesPersian.Length / 100) + 1;
+
+                for (int i = 0; i < resObjForChart.responseObject.datesPersian.Length; i += length)
+                {
+                    configbuilder += $"'{resObjForChart.responseObject.datesPersian.ElementAt(i)}',";
+                }
+
+                configbuilder += @"],'datasets':[";
+                configbuilder += @"{'label': '";
+                configbuilder += $"{resObjForChart.responseObject.stocksNormalPrices.First().stock.tickerPooyaFa}";
+                configbuilder += @"',
+							        'borderColor': 'rgb(255, 99, 132)',
+							        'backgroundColor': 'rgb(255, 99, 132)',
+							        'fill': false,
+							        'data': [";
+
+                var stock = resObjForChart.responseObject.stocksNormalPrices.First();
+                for (int i = 0; i < stock.normalPrices.Length; i += length)
+                {
+                    configbuilder += $"{stock.normalPrices.ElementAt(i)},";
+                }
+                configbuilder += @"]},],},'options': {
+					                'title': {
+						                'display': true,
+						                'text': 'بازدهی سهام'
+					                },
+					                },}
+                                ";
+
+                return configbuilder;
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }

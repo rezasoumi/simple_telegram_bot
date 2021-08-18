@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NextBot.Handlers;
+using NextBot.Alteranives;
 using NextBot.Models;
 using System;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Telegram.Bot.Args;
+using Telegram.Bot.Types;
 
 namespace NextBot.Commands
 {
@@ -28,7 +28,7 @@ namespace NextBot.Commands
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
-        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQueryEventArgs? callbackQueryEventArgs)
+        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQuery? callbackQueryEventArgs)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
 

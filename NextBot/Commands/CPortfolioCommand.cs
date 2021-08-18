@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NextBot.Alteranives;
 using NextBot.Handlers;
 using NextBot.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Telegram.Bot.Args;
+using Telegram.Bot.Types;
 
 namespace NextBot.Commands
 {
@@ -27,17 +27,15 @@ namespace NextBot.Commands
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
-        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
+        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQuery? query)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
             person.CommandState = 2;
-            _context.Entry(person).State = EntityState.Modified;
 
             if (person.CommandLevel == 0)
             {
                 await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.CreateTypesRKM);
                 person.CommandLevel = 1;
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 1)
             {
@@ -60,8 +58,8 @@ namespace NextBot.Commands
                         break;
                     case "🔙":
                         person.CommandState = 0;
-                        person.CommandLevel = 0;
-                        await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.MainMenuRKM);
+                        person.CommandLevel = 2;
+                        await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.SelectOrCreateRKM);
                         break;
                     default:
                         await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.CreateTypesRKM);
@@ -73,93 +71,88 @@ namespace NextBot.Commands
                     person.CommandLevel = 2;
                 }
 
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 2)
             {
                 if (commandText == "خیر")
                 {
-                    await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
-                                                            messageId: query.CallbackQuery.Message.MessageId,
+                    await chatService.UpdateMessage(chatId: query.Message.Chat.Id,
+                                                            messageId: query.Message.MessageId,
                                                             newText: "پرتفوی مورد نظر ذخیره نمی شود");
                     person.Save = false;
                 }
                 else if (commandText == "بلی")
                 {
-                    await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
-                                                            messageId: query.CallbackQuery.Message.MessageId,
+                    await chatService.UpdateMessage(chatId: query.Message.Chat.Id,
+                                                            messageId: query.Message.MessageId,
                                                             newText: "پرتفوی مورد نظر ذخیره می شود");
                     person.Save = true;
                 }
                 if (person.CreateSmartPortfolioType == 0)
                 {
                     SendSmartPortfolioToUser(chatService, person, 0);
-                    person.CommandLevel = 0;
+                    person.CommandLevel = 1;
                 }
                 else
                 {
                     await chatService.SendMessage(chatId, message: "ریسک مورد نظر خود را انتخاب کنید :", GetRiskInlineKeyboard());
                     person.CommandLevel = 3;
                 }
-
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 3)
             {
                 if (commandText == "بدون ریسک")
                 {
-                    await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
-                                                    messageId: query.CallbackQuery.Message.MessageId,
+                    await chatService.UpdateMessage(chatId: query.Message.Chat.Id,
+                                                    messageId: query.Message.MessageId,
                                                     newText: "درجه ریسک : بدون ریسک");
                     person.RiskRate = 0;
                 }
                 else if (commandText == "ریسک خیلی کم")
                 {
-                    await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
-                                                    messageId: query.CallbackQuery.Message.MessageId,
+                    await chatService.UpdateMessage(chatId: query.Message.Chat.Id,
+                                                    messageId: query.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک خیلی کم");
                     person.RiskRate = 1;
                 }
                 else if (commandText == "ریسک کم")
                 {
-                    await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
-                                                    messageId: query.CallbackQuery.Message.MessageId,
+                    await chatService.UpdateMessage(chatId: query.Message.Chat.Id,
+                                                    messageId: query.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک کم");
                     person.RiskRate = 2;
                 }
                 else if (commandText == "ریسک متوسط")
                 {
-                    await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
-                                                    messageId: query.CallbackQuery.Message.MessageId,
+                    await chatService.UpdateMessage(chatId: query.Message.Chat.Id,
+                                                    messageId: query.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک متوسط");
                     person.RiskRate = 3;
                 }
                 else if (commandText == "ریسک زیاد")
                 {
-                    await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
-                                                    messageId: query.CallbackQuery.Message.MessageId,
+                    await chatService.UpdateMessage(chatId: query.Message.Chat.Id,
+                                                    messageId: query.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک زیاد");
                     person.RiskRate = 4;
                 }
                 else if (commandText == "ریسک خیلی زیاد")
                 {
-                    await chatService.UpdateMessage(chatId: query.CallbackQuery.Message.Chat.Id,
-                                                    messageId: query.CallbackQuery.Message.MessageId,
+                    await chatService.UpdateMessage(chatId: query.Message.Chat.Id,
+                                                    messageId: query.Message.MessageId,
                                                     newText: "درجه ریسک : ریسک خیلی زیاد");
                     person.RiskRate = 5;
                 }
                 if (person.CreateSmartPortfolioType == 1)
                 {
                     SendSmartPortfolioToUser(chatService, person, 1);
-                    person.CommandLevel = 0;
+                    person.CommandLevel = 1;
                 }
                 else
                 {
                     await chatService.SendMessage(chatId, message: "یک عدد به عنوان حداقل وزن سهام ها بین 0.01 و 1 وارد کنید: (عدد را به انگلیسی وارد کنید)");
                     person.CommandLevel = 4;
                 }
-
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 4)
             {
@@ -168,7 +161,7 @@ namespace NextBot.Commands
                     if (person.CreateSmartPortfolioType == 2)
                     {
                         SendSmartPortfolioToUser(chatService, person, 2);
-                        person.CommandLevel = 0;
+                        person.CommandLevel = 1;
                     }
                     else
                     {
@@ -176,7 +169,6 @@ namespace NextBot.Commands
                         person.CommandLevel = 5;
                     }
                 }
-            _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 5)
             {
@@ -185,7 +177,7 @@ namespace NextBot.Commands
                     if (person.CreateSmartPortfolioType == 3)
                     {
                         SendSmartPortfolioToUser(chatService, person, 3);
-                        person.CommandLevel = 0;
+                        person.CommandLevel = 1;
                     }
                     else
                     {
@@ -193,7 +185,6 @@ namespace NextBot.Commands
                         person.CommandLevel = 6;
                     }
                 }
-                _context.Entry(person).State = EntityState.Modified;
             }
             else if (person.CommandLevel == 6)
             {
@@ -204,12 +195,11 @@ namespace NextBot.Commands
                     SendSmartPortfolioToUser(chatService, person, 4);
                     person.CommandLevel = 1;
                 }
-
-                _context.Entry(person).State = EntityState.Modified;
-            }
-            else
-            {
-                _context.Entry(person).State = EntityState.Modified;
+                if (query == null)
+                {
+                    await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.CreateTypesRKM);
+                    person.CommandLevel = 1;
+                }
             }
             _context.SaveChanges();
             return _context;

@@ -4,7 +4,7 @@ using NextBot.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Telegram.Bot.Args;
+using Telegram.Bot.Types;
 
 namespace NextBot.Commands
 {
@@ -26,9 +26,9 @@ namespace NextBot.Commands
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
         }
 
-        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQueryEventArgs? query)
+        public async Task<MyDbContext> Execute(IChatService chatService, long chatId, long userId, int messageId, string? commandText, CallbackQuery? query)
         {
-            var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
+			var person = _context.People.FirstOrDefault(p => p.ChatId == chatId);
             person.CommandState = 0;
             person.CommandLevel = 0;
             await chatService.SendMessage(chatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.MainMenuRKM);

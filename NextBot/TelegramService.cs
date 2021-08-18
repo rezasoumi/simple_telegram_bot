@@ -10,15 +10,17 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using System.IO;
+using Telegram.Bot.Extensions.Polling;
+using Telegram.Bot.Exceptions;
+using NextBot.Alteranives;
 
 namespace NextBot
 {
-    public class TelegramService : StaticFunctions, IChatService, IDisposable
+    public class TelegramService : StaticFunctions, IChatService, IDisposable, IUpdateHandler
     {
         private readonly TelegramBotClient _botClient;
         private readonly IServiceProvider _serviceProvider;
@@ -26,7 +28,10 @@ namespace NextBot
         private bool disposedValue;
         public MyDbContext _context;
         public event EventHandler<ChatMessageEventArgs>? ChatMessage;
-        public event EventHandler<CallbackQueryEventArgs>? Callback;
+        //public event EventHandler<CallbackQueryEventArgs>? Callback;
+        public event EventHandler<CallbackQuery>? Callback;
+        public UpdateType[] AllowedUpdates => null;
+
 
         public async Task<string> BotUserName() => $"@{(await _botClient.GetMeAsync()).Username}";
 
@@ -38,10 +43,12 @@ namespace NextBot
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
 
             _botClient = new TelegramBotClient(configuration["Telegram:ApiKey"]);
-            _botClient.OnMessage += OnMessage;
-            _botClient.OnCallbackQuery += OnCallbackQuery;
             RegisterCommands();
-            _botClient.StartReceiving();
+            
+            var cts = new CancellationTokenSource();
+            var cancellationToken = cts.Token;
+            
+            _botClient.StartReceiving(this, cancellationToken);
         }
 
         /// This method registers all the commands with the bot on telegram
@@ -58,40 +65,40 @@ namespace NextBot
                 });
             _botClient.SetMyCommandsAsync(commands).GetAwaiter().GetResult();
         }
-
-        private async void OnMessage(object? sender, MessageEventArgs e)
+        
+        public async void OnMessage_(Update update)
         {
             var scope = _serviceProvider.CreateScope();
             _context = scope.ServiceProvider.GetRequiredService<MyDbContext>();
-            _logger.LogTrace("Message received from '{Username}': '{Message}'", e.Message.From.Username ?? e.Message.From.FirstName, e.Message.Text);
+            _logger.LogTrace("Message received from '{Username}': '{Message}'", update.Message.From.Username ?? update.Message.From.FirstName, update.Message.Text);
 
-            if (e.Message.Text == null /*|| !e.Message.Entities.Any(x => x.Type == MessageEntityType.BotCommand)*/)
+            if (update.Message.Text == null /*|| !e.Message.Entities.Any(x => x.Type == MessageEntityType.BotCommand)*/)
             {
                 _logger.LogTrace("No command was specified");
                 return;
             }
-            await CheckRegistering(sender, e);
+            await CheckRegistering_(update);
         }
-
-        private async Task CheckRegistering(object sender, MessageEventArgs e)
+        
+        private async Task CheckRegistering_(Update update)
         {
             try
             {
                 var channel = new ChatId(-1001391973136);
-                var chatMember1 = await _botClient.GetChatMemberAsync(channel, Convert.ToInt32(e.Message.Chat.Id));
+                var chatMember1 = await _botClient.GetChatMemberAsync(channel, Convert.ToInt32(update.Message.Chat.Id));
 
                 // Creator Or Member Or Left
                 if (chatMember1.Status.ToString() != "Left")
                 {
-                    RegisterWithChatId(sender, e);
-                    await OnMessageAfterRegistering(sender, e);
+                    RegisterWithChatId_(update);
+                    await OnMessageAfterRegistering_(update);
                 }
                 else
                 {
                     // Joining to our channel message
                     await _botClient.SendTextMessageAsync(
-                            chatId: e.Message.Chat,
-                            text: $"سلام {e.Message.Chat.FirstName} عزیز" +
+                            chatId: update.Message.Chat,
+                            text: $"سلام {update.Message.Chat.FirstName} عزیز" +
                             $"\nبرای استفاده از ربات ابتدا باید در کانال نکست عضو بشید." +
                             $"\nبعد از عضویت، مجدد پیام ارسال کنید تا ربات برای شما فعال شود."
                         );
@@ -102,61 +109,58 @@ namespace NextBot
                 Console.WriteLine(ex.Message);
             }
         }
-
-        private void RegisterWithChatId(object sender, MessageEventArgs messageEventArgs)
+        
+        private void RegisterWithChatId_(Update update)
         {
-            var person1 = _context.People.Where(p => p.ChatId == messageEventArgs.Message.Chat.Id);
+            var person1 = _context.People.Where(p => p.ChatId == update.Message.Chat.Id);
 
             Person newPerson;
             if (!person1.Any())
             {
                 newPerson = new Person()
                 {
-                    ChatId = messageEventArgs.Message.Chat.Id
+                    ChatId = update.Message.Chat.Id
                 };
                 _context.People.Add(newPerson);
                 _context.SaveChanges();
             }
         }
-
-        private async Task OnMessageAfterRegistering(object sender, MessageEventArgs e)
+        
+        private async Task OnMessageAfterRegistering_(Update update)
         {
-            _logger.Log(LogLevel.Information, $"{e.Message.Chat.Username} --> {e.Message.Text} at {e.Message.Date}", DateTime.UtcNow);
+            _logger.Log(LogLevel.Information, $"{update.Message.Chat.Username} --> {update.Message.Text} at {update.Message.Date}", DateTime.UtcNow);
             try
             {
                 using StreamWriter file = new("log.txt", append: true);
-                await file.WriteLineAsync($"{e.Message.Chat.Username} --> {e.Message.Text} at {e.Message.Date}");
+                await file.WriteLineAsync($"{update.Message.Chat.Username} --> {update.Message.Text} at {update.Message.Date}");
             }
             catch (Exception)
             {
                 _logger.Log(LogLevel.Error, $"log cannot append to log.txt", DateTime.UtcNow);
             }
 
-            if (e.Message.Entities?.Count(x => x.Type == MessageEntityType.BotCommand) > 1)
+            if (update.Message.Entities?.Count(x => x.Type == MessageEntityType.BotCommand) > 1)
             {
                 _logger.LogTrace("More than one command was specified");
-                if (sender is TelegramBotClient client)
-                {
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, "Please only send one command at a time.");
-                }
+                await _botClient.SendTextMessageAsync(update.Message.Chat.Id, "Please only send one command at a time.");
                 return;
             }
 
-            var person = _context.People.FirstOrDefault(p => p.ChatId == e.Message.Chat.Id);
+            var person = _context.People.FirstOrDefault(p => p.ChatId == update.Message.Chat.Id);
 
-            if (e.Message.Entities?.SingleOrDefault().Type == MessageEntityType.BotCommand)
+            if (update.Message.Entities?.SingleOrDefault().Type == MessageEntityType.BotCommand)
             {
-                var botCommand = e.Message.Entities.Single(x => x.Type == MessageEntityType.BotCommand);
-                var command = e.Message.Text.Substring(botCommand.Offset, botCommand.Length);
+                var botCommand = update.Message.Entities.Single(x => x.Type == MessageEntityType.BotCommand);
+                var command = update.Message.Text.Substring(botCommand.Offset, botCommand.Length);
                 command = command.Replace(await BotUserName(), string.Empty);
                 person.CommandLevel = 0;
                 _context.SaveChanges();
                 ChatMessage?.Invoke(this, new ChatMessageEventArgs
                 {
-                    Text = e.Message.Text.Replace(command, string.Empty).Trim(),
-                    UserId = e.Message.From.Id,
-                    ChatId = e.Message.Chat.Id,
-                    MessageId = e.Message.MessageId,
+                    Text = update.Message.Text.Replace(command, string.Empty).Trim(),
+                    UserId = update.Message.From.Id,
+                    ChatId = update.Message.Chat.Id,
+                    MessageId = update.Message.MessageId,
                     Command = command
                 });
             }
@@ -164,12 +168,12 @@ namespace NextBot
             {
                 if (person.CommandLevel == 0)
                 {
-                    switch (e.Message.Text)
+                    switch (update.Message.Text)
                     {
                         case "سهام":
                             person.CommandState = 1;
                             person.CommandLevel = 1;
-                            await _botClient.SendTextMessageAsync(person.ChatId, "نام سهم مورد نظر را وارد کنید :");
+                            await _botClient.SendTextMessageAsync(person.ChatId, "نام سهم مورد نظر (یا بخشی از آن) را وارد کنید :");
                             break;
                         case "صنعت":
                             await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "هنوز پیاده سازی نشده است. از گزینه های موجود یک گزینه را انتخاب کنید :", replyMarkup: Markup.MainMenuRKM);
@@ -189,15 +193,15 @@ namespace NextBot
                 }
                 else if (person.CommandLevel == 1)
                 {
-                    switch (e.Message.Text)
+                    switch (update.Message.Text)
                     {
                         case "تشکیل💰":
                             ChatMessage?.Invoke(this, new ChatMessageEventArgs
                             {
-                                Text = e.Message.Text.Replace("/cportfolioset", string.Empty).Trim(),
-                                UserId = e.Message.From.Id,
-                                ChatId = e.Message.Chat.Id,
-                                MessageId = e.Message.MessageId,
+                                Text = update.Message.Text.Replace("/cportfolioset", string.Empty).Trim(),
+                                UserId = update.Message.From.Id,
+                                ChatId = update.Message.Chat.Id,
+                                MessageId = update.Message.MessageId,
                                 Command = "/cportfolioset"
                             });
                             Thread.Sleep(500);
@@ -205,8 +209,9 @@ namespace NextBot
                             break;
                         case "انتخاب🔎":
                             person.CommandState = 3;
-                            person.CommandLevel = 1;
-                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", replyMarkup: Markup.SelectTypesRKM);
+                            person.CommandLevel = 2;
+                            person.ClassicNextSelectState = 1;
+                            person = await ShowPreviousOrNextListInPortfolioSetSelect(null, person, _botClient); 
                             break;
                         case "🔙":
                             person.CommandLevel = 0;
@@ -219,7 +224,7 @@ namespace NextBot
                 }
                 else if (person.CommandLevel == 2)
                 {
-                    switch (e.Message.Text)
+                    switch (update.Message.Text)
                     {
                         case "تشکیل💰":
                             person.CommandState = 2;
@@ -228,8 +233,9 @@ namespace NextBot
                             break;
                         case "انتخاب🔎":
                             person.CommandState = 5;
-                            person.CommandLevel = 1;
-                            await _botClient.SendTextMessageAsync(chatId: person.ChatId, text: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", replyMarkup: Markup.SelectTypesRKM);
+                            person.CommandLevel = 2;
+                            person.ClassicNextSelectState = 1;
+                            person = await ShowPreviousOrNextListInClassicNextSelect(null, person, _botClient); 
                             break;
                         case "🔙":
                             person.CommandLevel = 0;
@@ -245,10 +251,10 @@ namespace NextBot
             {
                 ChatMessage?.Invoke(this, new ChatMessageEventArgs
                 {
-                    Text = e.Message.Text.Replace("/return", string.Empty).Trim(),
-                    UserId = e.Message.From.Id,
-                    ChatId = e.Message.Chat.Id,
-                    MessageId = e.Message.MessageId,
+                    Text = update.Message.Text.Replace("/return", string.Empty).Trim(),
+                    UserId = update.Message.From.Id,
+                    ChatId = update.Message.Chat.Id,
+                    MessageId = update.Message.MessageId,
                     Command = "/return"
                 });
             }
@@ -256,10 +262,10 @@ namespace NextBot
             {
                 ChatMessage?.Invoke(this, new ChatMessageEventArgs
                 {
-                    Text = e.Message.Text.Replace("/cportfolio", string.Empty).Trim(),
-                    UserId = e.Message.From.Id,
-                    ChatId = e.Message.Chat.Id,
-                    MessageId = e.Message.MessageId,
+                    Text = update.Message.Text.Replace("/cportfolio", string.Empty).Trim(),
+                    UserId = update.Message.From.Id,
+                    ChatId = update.Message.Chat.Id,
+                    MessageId = update.Message.MessageId,
                     Command = "/cportfolio"
                 });
             }
@@ -267,10 +273,10 @@ namespace NextBot
             {
                 ChatMessage?.Invoke(this, new ChatMessageEventArgs
                 {
-                    Text = e.Message.Text.Replace("/sportfolioset", string.Empty).Trim(),
-                    UserId = e.Message.From.Id,
-                    ChatId = e.Message.Chat.Id,
-                    MessageId = e.Message.MessageId,
+                    Text = update.Message.Text.Replace("/sportfolioset", string.Empty).Trim(),
+                    UserId = update.Message.From.Id,
+                    ChatId = update.Message.Chat.Id,
+                    MessageId = update.Message.MessageId,
                     Command = "/sportfolioset"
                 });
             }
@@ -278,10 +284,10 @@ namespace NextBot
             {
                 ChatMessage?.Invoke(this, new ChatMessageEventArgs
                 {
-                    Text = e.Message.Text.Replace("/cportfolioset", string.Empty).Trim(),
-                    UserId = e.Message.From.Id,
-                    ChatId = e.Message.Chat.Id,
-                    MessageId = e.Message.MessageId,
+                    Text = update.Message.Text.Replace("/cportfolioset", string.Empty).Trim(),
+                    UserId = update.Message.From.Id,
+                    ChatId = update.Message.Chat.Id,
+                    MessageId = update.Message.MessageId,
                     Command = "/cportfolioset"
                 });
             }
@@ -289,30 +295,27 @@ namespace NextBot
             {
                 ChatMessage?.Invoke(this, new ChatMessageEventArgs
                 {
-                    Text = e.Message.Text.Replace("/sportfolio", string.Empty).Trim(),
-                    UserId = e.Message.From.Id,
-                    ChatId = e.Message.Chat.Id,
-                    MessageId = e.Message.MessageId,
+                    Text = update.Message.Text.Replace("/sportfolio", string.Empty).Trim(),
+                    UserId = update.Message.From.Id,
+                    ChatId = update.Message.Chat.Id,
+                    MessageId = update.Message.MessageId,
                     Command = "/sportfolio"
                 });
             }
             _context.SaveChanges();
         }
-
-        private void OnCallbackQuery(object? sender, CallbackQueryEventArgs e)
+        
+        private void OnCallbackQuery_(Update update)
         {
-            _logger.LogTrace("Callback received from '{Username}': '{Message}'", e.CallbackQuery.From.Username ?? e.CallbackQuery.From.FirstName, e.CallbackQuery.Data);
+            _logger.LogTrace("Callback received from '{Username}': '{Message}'", update.CallbackQuery.From.Username ?? update.CallbackQuery.From.FirstName, update.CallbackQuery.Data);
             
-            if (sender is TelegramBotClient client)
-            {
-                Callback?.Invoke(this, e);
-                // This removes the keyboard, but we could also update one here...
-                //await client.EditMessageReplyMarkupAsync(e.CallbackQuery.Message.Chat.Id, e.CallbackQuery.Message.MessageId, null);
+            Callback?.Invoke(this, update.CallbackQuery);
+            // This removes the keyboard, but we could also update one here...
+            //await client.EditMessageReplyMarkupAsync(e.CallbackQuery.Message.Chat.Id, e.CallbackQuery.Message.MessageId, null);
 
-                //Callback?.Invoke(this, e);
-            }
+            //Callback?.Invoke(this, e);
         }
-
+        
         public async Task<bool> UpdateMessage(long chatId, int messageId, string? newText, InlineKeyboardMarkup inlineKeyboard = null)
         {
             try
@@ -392,7 +395,7 @@ namespace NextBot
                 {
                     if (_botClient != null)
                     {
-                        _botClient.OnMessage -= OnMessage;
+                        //_botClient.OnMessage -= OnMessage;
                     }
                 }
 
@@ -420,6 +423,31 @@ namespace NextBot
         {
             await _botClient.AnswerCallbackQueryAsync(callbackQueryId);
             return true;
+        }
+
+        public async Task HandleError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+        {
+            if (exception is ApiRequestException apiRequestException)
+            {
+                _logger.Log(LogLevel.Error, apiRequestException.Message);
+            }
+        }
+
+        public async Task HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        {
+            if (update.Message is Message message)
+            {
+                OnMessage_(update);
+            }
+            if (update.CallbackQuery is CallbackQuery query)
+            {
+                OnCallbackQuery_(update);
+            }
+        }
+
+        public async Task SendPhotoAsync(long chatId, string url)
+        {
+            await _botClient.SendPhotoAsync(chatId, url);
         }
     }
 }

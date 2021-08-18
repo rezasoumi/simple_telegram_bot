@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using NextBot.Handlers;
 using NextBot.Models;
 using System;
 using System.Collections.Generic;
@@ -9,10 +9,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Args;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace NextBot.Handlers
+namespace NextBot.Alteranives
 {
     public class StaticFunctions
     {
@@ -132,9 +132,9 @@ namespace NextBot.Handlers
             return String.Join(";", array);
         }
 
-        public async Task<PersianDateTime> ProcessCalendar(IChatService chatService, CallbackQueryEventArgs callbackQueryEventArgs)
+        public async Task<PersianDateTime> ProcessCalendar(IChatService chatService, CallbackQuery callbackQuery)
         {
-            var query = callbackQueryEventArgs.CallbackQuery;
+            var query = callbackQuery;
             var data = SeprateCallbackDate(query.Data);
             var action = data[0];
             var year = data[1];
@@ -214,249 +214,6 @@ namespace NextBot.Handlers
             return data.Split(";");
         }
 
-        public static async Task<Person> ShowPreviousOrNextListInClassicNextSelect(IChatService chatService, Person person)
-        {
-            var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio/all");
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.Rootobject>(await streamTask);
-            var list_ = new List<int> { };
-            foreach (var item in root.ResponseObject)
-            {
-                list_.Add(item.Id);
-            }
-            list_.Reverse();
-
-            var list = new List<string> { "قبلی⬆️" };
-            for (long i = person.ClassicNextSelectState; i < Math.Min(20 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
-            {
-                list.Add($"پرتفوی شماره {list_.ElementAt(Convert.ToInt32(i))}");
-            }
-
-            person.ClassicNextSelectState += 20;
-            if (root.ResponseObject.Length - person.ClassicNextSelectState > 0)
-            {
-                list.Add("بعدی⬇️");
-            }
-            var buttons = list.Select(x => new[] { new KeyboardButton(x) }).ToArray();
-            await chatService.SendMessage(chatId: person.ChatId, message: "پرتفوی مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
-            return person;
-        }
-
-        public static async Task<Person> ShowSpecificPortfolioInClassicNextSelect(IChatService chatService, Person person, String strNumber)
-        {
-            try
-            {
-                var num = int.Parse(strNumber.Trim());
-
-                var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{num}");
-                var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask);
-
-                if (root.IsSuccessful)
-                {
-                    StringBuilder str = new();
-                    str.Append($"id : {root.ResponseObject.Id}\n");
-                    str.Append("birthday : " + root.ResponseObject.Birthday + "\n");
-                    str.Append("persian birthday : " + root.ResponseObject.BirthdayPersian + "\n");
-
-                    await chatService.SendMessage(chatId: person.ChatId, message: str.ToString());
-                    Thread.Sleep(500);
-                    await chatService.SendMessage(chatId: person.ChatId, message: "از بین گزینه های زیر انتخاب کنید :", Markup.ReturnOrComparisonRKM);
-
-                    person.CommandLevel = 3;
-                    person.PortfolioIdForClassicNextSelect = num;
-                }
-                else
-                {
-                    person.CommandLevel = 1;
-                    await chatService.SendMessage(chatId: person.ChatId, message: root.ErrorMessageFa);
-                    Thread.Sleep(200);
-                    await chatService.SendMessage(chatId: person.ChatId, message: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", Markup.SelectTypesRKM);
-                }
-            }
-            catch (Exception)
-            {
-                person.CommandLevel = 1;
-                await chatService.SendMessage(chatId: person.ChatId, message: "ورودی نامعتبر !");
-                await chatService.SendMessage(chatId: person.ChatId, message: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", Markup.SelectTypesRKM);
-            }
-            return person;
-        }
-
-        public static async Task<bool> ShowReturnAndComparisonInClassicNextSelect(IChatService chatService, Person person, Task<Stream> streamTask, long portfolioId)
-        {
-            await chatService.SendMessage(chatId: person.ChatId, message: "تاریخ شروع همان تاریخ ساخت پرتفوی مورد نظر می باشد ...");
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
-            if (root.IsSuccessful)
-            {
-                await chatService.SendMessage(chatId: person.ChatId, message: $"بازدهی پرتفوی شماره  {portfolioId} در مجموع : " + "\n" + Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 1) + " %");
-                Thread.Sleep(500);
-                return true;
-            }
-            else
-            {
-                await chatService.SendMessage(chatId: person.ChatId, message: root.ErrorMessageFa);
-                Thread.Sleep(500);
-                return false;
-            }
-        }
-        
-        public static async Task<bool> ShowReturnAndComparisonInPortfolioSet(IChatService chatService, Person person, Task<Stream> streamTask, long portfolioId)
-        {
-            await chatService.SendMessage(chatId: person.ChatId, message: "تاریخ شروع همان تاریخ ساخت پرتفوی مرکب مورد نظر می باشد ...");
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
-            if (root.IsSuccessful)
-            {
-                await chatService.SendMessage(chatId: person.ChatId, message: $"بازدهی پرتفوی مرکب شماره  {portfolioId} : " + "\n" + Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 1) + " %", Markup.PortfolioSetSelectRKM);
-                Thread.Sleep(500);
-                return true;
-            }
-            else
-            {
-                await chatService.SendMessage(chatId: person.ChatId, message: root.ErrorMessageFa, Markup.PortfolioSetSelectRKM);
-                Thread.Sleep(500);
-                return false;
-            }
-
-        }
-
-        public static async Task<string> GetBithdayOfPortfolio(Person person)
-        {
-            var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{person.PortfolioIdForClassicNextSelect}");
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask);
-            var str = root.ResponseObject.BirthdayPersian;
-            return str.Replace("/", "");
-        }
-        
-        public static async Task<string> GetBithdayOfPortfolioSet(Person person)
-        {
-            var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolioSet/{person.PortfolioIdForClassicNextSelect}");
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask);
-            var str = root.ResponseObject.BirthdayPersian;
-            return str.Replace("/", "");
-        }
-
-        public static async Task ShowIndextReturnInClassicNextSelect(IChatService chatService, Person person, Task<Stream> streamTask)
-        {
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
-            if (root.IsSuccessful)
-                await chatService.SendMessage(chatId: person.ChatId, message: $"بازدهی شاخص تا همین زمان : " + "\n" + Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 1) + " %");
-            else
-                await chatService.SendMessage(chatId: person.ChatId, message: root.ErrorMessageFa);
-            Thread.Sleep(300);
-        }
-
-        public static async Task ShowReturnOfEveryStockInPortfolio(IChatService chatService, Person person, string text)
-        {
-            var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/{person.PortfolioIdForClassicNextSelect}");
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootObjectForSpecificPortfolio>(await streamTask);
-            var tickerKeys = new List<int>();
-            var symbols = new List<string>();
-            //var weights = new List<float>();
-            foreach (var item in root.ResponseObject.StockAndWeights)
-            {
-                //weights.Add(item.Weight);
-                tickerKeys.Add(item.Stock.TickerKey);
-                symbols.Add(item.Stock.TickerPooyaFa);
-            }
-            string json;
-            if (person.CommandLevel == 9)
-            {
-                var parameter = new StockReturn.StockReturnParameter() { BeginDatePersian = int.Parse(await GetBithdayOfPortfolio(person)), TickerKeys = tickerKeys.ToArray() };
-                json = JsonConvert.SerializeObject(parameter);
-            }
-            else
-            {
-                var parameter = new StockReturn.StockReturnParameterWithEndDate() { BeginDatePersian = int.Parse(await GetBithdayOfPortfolio(person)), TickerKeys = tickerKeys.ToArray(), EndDatePersian = int.Parse(text) };
-                json = JsonConvert.SerializeObject(parameter);
-            }
-            var strContent = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync("http://192.168.95.88:30907/api/stock/returns", strContent).Result.Content.ReadAsStringAsync();
-            var resObj = JsonConvert.DeserializeObject<StockReturn.StockReturnRoot>(response);
-            StringBuilder str = new();
-
-            foreach (var item in resObj.ResponseObject)
-            {
-                str.Append($"{symbols.First()} : " + "\n" + Math.Round(item * 100, 1) + " %\n"); //__________________________________________________ $"(%w : {Math.Round(weights.First() * 100, 1)})" +
-                symbols.RemoveAt(0);
-                //weights.RemoveAt(0);
-            }
-            await chatService.SendMessage(chatId: person.ChatId, message: str.ToString());
-        }
-
-        public static async Task<Person> ShowSpecificPortfolioSetInClassicNextSelect(IChatService chatService, Person person, String strNumber)
-        {
-            try
-            {
-                var num = int.Parse(strNumber.Trim());
-
-                var streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolioSet/{num}");
-                var root = await System.Text.Json.JsonSerializer.DeserializeAsync<PortfolioSet.Rootobject>(await streamTask);
-
-                if (root.IsSuccessful)
-                {
-                    StringBuilder str = new();
-                    str.Append($"id : {root.ResponseObject.Id}\n");
-                    str.Append("birthday : " + root.ResponseObject.Birthday + "\n");
-                    str.Append("persian birthday : " + root.ResponseObject.BirthdayPersian + "\n");
-                    str.Append("Stock and weights : \n");
-                    for (int i = 0; i < root.ResponseObject.ClassicNextPortfolioSetElements?.Length; i++)
-                    {
-                        var item = root.ResponseObject.ClassicNextPortfolioSetElements.ElementAt(i);
-                        str.Append($"Element number {item.ElementNumber} :\n");
-                        str.Append($"Portfolio id : {item.PortfolioId}\n");
-                        str.Append($"Persian birthday : {item.BirthdayPersian}\n\n");
-                    }
-
-                    await chatService.SendMessage(person.ChatId, message: str.ToString());
-                    Thread.Sleep(500);
-                    await chatService.SendMessage(person.ChatId, message: "از بین گزینه های زیر انتخاب کنید :", Markup.PortfolioSetSelectRKM);
-
-                    person.CommandLevel = 3;
-                    person.PortfolioIdForClassicNextSelect = num;
-                }
-                else
-                {
-                    person.CommandLevel = 1;
-                    await chatService.SendMessage(person.ChatId, message: root.ErrorMessageFa);
-                    Thread.Sleep(200);
-                    await chatService.SendMessage(person.ChatId, message: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", Markup.SelectTypesRKM);
-                }
-            }
-            catch (Exception)
-            {
-                person.CommandLevel = 1;
-                await chatService.SendMessage(person.ChatId, message: "ورودی نامعتبر !");
-                await chatService.SendMessage(person.ChatId, message: "روش انتخاب را از بین دو گزینه موجود وارد کنید :", Markup.SelectTypesRKM);
-            }
-            return person;
-        }
-
-        public static async Task<Person> ShowPreviousOrNextListInPortfolioSetSelect(IChatService chatService, Person person)
-        {
-            var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolioSet/all");
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.Rootobject>(await streamTask);
-            var list_ = new List<int> { };
-            foreach (var item in root.ResponseObject)
-            {
-                list_.Add(item.Id);
-            }
-            list_.Reverse();
-
-            var list = new List<string> { "قبلی⬆️" };
-            for (long i = person.ClassicNextSelectState; i < Math.Min(20 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
-            {
-                list.Add($"پرتفوی مرکب شماره {list_.ElementAt(Convert.ToInt32(i))}");
-            }
-
-            person.ClassicNextSelectState += 20;
-            if (root.ResponseObject.Length - person.ClassicNextSelectState > 0)
-            {
-                list.Add("بعدی⬇️");
-            }
-            var buttons = list.Select(x => new[] { new KeyboardButton(x) }).ToArray();
-            await chatService.SendMessage(person.ChatId, message: "پرتفوی مرکب مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
-            return person;
-        }
-
         public static InlineKeyboardMarkup GetRiskInlineKeyboard()
         {
             InlineKeyboardMarkup inlineKeyboard = new(new InlineKeyboardButton[][]
@@ -489,50 +246,66 @@ namespace NextBot.Handlers
             return inlineKeyboard;
         }
 
+        public static async Task ShowIndexReturnInClassicNextSelect(IChatService chatService, Person person, Task<Stream> streamTask)
+        {
+            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.RootobjectForCalculateReturnAndComparison>(await streamTask);
+            if (root.IsSuccessful)
+                await chatService.SendMessage(chatId: person.ChatId, message: $"بازدهی شاخص تا همین زمان : " + "\n" + Math.Round(Convert.ToDecimal(root.ResponseObject) * 100, 1) + " %");
+            else
+                await chatService.SendMessage(chatId: person.ChatId, message: root.ErrorMessageFa);
+            Thread.Sleep(300);
+        }
+
         public static async void SendSmartPortfolioToUser(IChatService chatService, Person person, int s)
         {
             await chatService.SendMessage(person.ChatId, message: "در حال ساخت پرتفوی مورد نظر ...");
-            System.Threading.Tasks.Task<Stream> streamTask = null;
-            if (s == 0)
-                await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}"));
-            else if (s == 1)
-                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}");
-            else if (s == 2)
-                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}");
-            else if (s == 3)
-                streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}/{person.MaximumStockWeight}");
-            else if (s == 4)
-                await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}/{person.MaximumStockWeight}/{person.ProductionDate}"));
-
-            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextFormation.RootObject>(await streamTask);
-
-            if (root.IsSuccessful)
+            try
             {
-                StringBuilder str = new();
-                for (int i = 0; i < root.ResponseObject.StockAndWeights.Length; i++)
+                Task<Stream> streamTask = null;
+                if (s == 0)
+                    await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/3/0.05"));
+                else if (s == 1)
+                    await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}"));
+                else if (s == 2)
+                    await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}"));
+                else if (s == 3)
+                    await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}/{person.MaximumStockWeight}"));
+                else if (s == 4)
+                    await (streamTask = client.GetStreamAsync($"http://192.168.95.88:30907/api/classicNext/portfolio/create/smart/{person.Save}/{person.RiskRate}/{person.MinimumStockWeight}/{person.MaximumStockWeight}/{person.ProductionDate}"));
+
+                var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextFormation.RootObject>(await streamTask);
+                if (root.IsSuccessful)
                 {
-                    var item = root.ResponseObject.StockAndWeights.ElementAt(i);
-                    str.Append($"number {i + 1} :\n");
-                    str.Append("tickerPooyaFa: " + item.Stock.TickerPooyaFa + "\n");
-                    str.Append("tickerNamePooyaFa: " + item.Stock.TickerNamePooyaFa + "\n");
-                    str.Append("marketType: " + item.Stock.MarketType + "\n");
-                    str.Append("weight: " + Math.Round(item.Weight * 100, 1) + " %\n\n");
-                }
-                Thread.Sleep(500);
-                await chatService.SendMessage(person.ChatId, message: str.ToString());
-                Thread.Sleep(500);
+                    StringBuilder str = new();
+                    for (int i = 0; i < root.ResponseObject.StockAndWeights.Length; i++)
+                    {
+                        var item = root.ResponseObject.StockAndWeights.ElementAt(i);
+                        str.Append($"number {i + 1} :\n");
+                        str.Append("tickerPooyaFa: " + item.Stock.TickerPooyaFa + "\n");
+                        str.Append("tickerNamePooyaFa: " + item.Stock.TickerNamePooyaFa + "\n");
+                        str.Append("marketType: " + item.Stock.MarketType + "\n");
+                        str.Append("weight: " + Math.Round(item.Weight * 100, 1) + " %\n\n");
+                    }
+                    Thread.Sleep(500);
+                    await chatService.SendMessage(person.ChatId, message: str.ToString());
+                    Thread.Sleep(500);
 
-                await chatService.SendMessage(person.ChatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.CreateTypesRKM);
+                    await chatService.SendMessage(person.ChatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.CreateTypesRKM);
+                }
+                else
+                {
+                    await chatService.SendMessage(person.ChatId, message: root.ErrorMessageFa);
+                    Thread.Sleep(200);
+                    await chatService.SendMessage(person.ChatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.CreateTypesRKM);
+                }
             }
-            else
+            catch (Exception)
             {
-                await chatService.SendMessage(person.ChatId, message: root.ErrorMessageFa);
-                Thread.Sleep(200);
-                await chatService.SendMessage(person.ChatId, message: "از گزینه های موجود یک گزینه را انتخاب کنید :", Markup.CreateTypesRKM);
+                await chatService.SendMessage(person.ChatId, message: "خطایی رخ داده است. لطفا مجدد تلاش کنید.");
             }
         }
 
-        public static bool SaveTickerKey(Person person, string text, List<IndustryStocks.Industry> industries)
+        public static int SaveTickerKey(Person person, string text, List<IndustryStocks.Industry> industries)
         {
             foreach (var industry in industries)
             {
@@ -541,14 +314,14 @@ namespace NextBot.Handlers
                     if (stock.Symbol == text)
                     {
                         person.TickerKeyForStock = stock.TickerKey;
-                        return true;
+                        return stock.TickerKey;
                     }
                 }
 
             }
-            return false;
+            return -1;
         }
-        
+        /*
         public static bool SaveTickerKeyForETF(Person person, string text, Models.ETF.All.Rootobject etfs)
         {
             foreach (var etf in etfs.responseObject)
@@ -561,8 +334,8 @@ namespace NextBot.Handlers
             }
             return false;
         }
-
-        public async Task<string> CheckAndGetDate(IChatService chatService, CallbackQueryEventArgs? query)
+        */
+        public async Task<string> CheckAndGetDate(IChatService chatService, CallbackQuery? query)
         {
             if (query != null)
             {
@@ -582,6 +355,68 @@ namespace NextBot.Handlers
                 }
             }
             return null;
+        }
+
+        // for portfolioset 
+        public static async Task<Person> ShowPreviousOrNextListInPortfolioSetSelect(IChatService? chatService, Person person, TelegramBotClient? botClient)
+        {
+            var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolioSet/all");
+            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.Rootobject>(await streamTask);
+            var list_ = new List<int> { };
+            foreach (var item in root.ResponseObject)
+            {
+                list_.Add(item.Id);
+            }
+            list_.Reverse();
+
+            var list = new List<string> { "قبلی⬆️" };
+            for (long i = person.ClassicNextSelectState; i < Math.Min(20 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
+            {
+                list.Add($"پرتفوی مرکب شماره {list_.ElementAt(Convert.ToInt32(i))}");
+            }
+
+            person.ClassicNextSelectState += 20;
+            if (root.ResponseObject.Length - person.ClassicNextSelectState > 0)
+            {
+                list.Add("بعدی⬇️");
+            }
+            var buttons = list.Select(x => new[] { new KeyboardButton(x) }).ToArray();
+            if (chatService == null)
+                await botClient.SendTextMessageAsync(person.ChatId, text: "پرتفوی مرکب مورد نظر را انتخاب کنید :", replyMarkup: new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
+            else
+                await chatService.SendMessage(person.ChatId, message: "پرتفوی مرکب مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
+            return person;
+        }
+
+        // for portfolio
+        public static async Task<Person> ShowPreviousOrNextListInClassicNextSelect(IChatService? chatService, Person person, TelegramBotClient? botClient)
+        {
+            var streamTask = client.GetStreamAsync("http://192.168.95.88:30907/api/classicNext/portfolio/all");
+            var root = await System.Text.Json.JsonSerializer.DeserializeAsync<ClassicNextSelect.Rootobject>(await streamTask);
+            var list_ = new List<int> { };
+            foreach (var item in root.ResponseObject)
+            {
+                list_.Add(item.Id);
+            }
+            list_.Reverse();
+
+            var list = new List<string> { "قبلی⬆️" };
+            for (long i = person.ClassicNextSelectState; i < Math.Min(20 + person.ClassicNextSelectState, root.ResponseObject.Length); i++)
+            {
+                list.Add($"پرتفوی شماره {list_.ElementAt(Convert.ToInt32(i))}");
+            }
+
+            person.ClassicNextSelectState += 20;
+            if (root.ResponseObject.Length - person.ClassicNextSelectState > 0)
+            {
+                list.Add("بعدی⬇️");
+            }
+            var buttons = list.Select(x => new[] { new KeyboardButton(x) }).ToArray();
+            if (chatService == null)
+                await botClient.SendTextMessageAsync(chatId: person.ChatId, text: "پرتفوی مورد نظر را انتخاب کنید :", replyMarkup: new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
+            else
+                await chatService.SendMessage(chatId: person.ChatId, message: "پرتفوی مورد نظر را انتخاب کنید :", new ReplyKeyboardMarkup(buttons, resizeKeyboard: true));
+            return person;
         }
     }
 }

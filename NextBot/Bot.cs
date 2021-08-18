@@ -5,11 +5,11 @@ using NextBot.Commands;
 using NextBot.Handlers;
 using NextBot.Models;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Telegram.Bot.Args;
+using Telegram.Bot.Types;
 
 namespace NextBot
 {
@@ -34,7 +34,7 @@ namespace NextBot
         public Task StartAsync(CancellationToken cancellationToken)
         {
             _chatService.ChatMessage += OnChatMessage;
-            _chatService.Callback += OnCallback;
+            _chatService.Callback += OnCallback_;
             return Task.CompletedTask;
         }
 
@@ -55,7 +55,7 @@ namespace NextBot
                 _logger.LogError(ex, "{Time}: OnChatMessage - Error {Exception}", DateTime.UtcNow, ex.Message);
             }
         }
-
+        /*
         private async void OnCallback(object? sender, CallbackQueryEventArgs callbackEventArgs)
         {
             try
@@ -67,7 +67,19 @@ namespace NextBot
                 _logger.LogError(ex, "{Time}: OnChatMessage - Error {Exception}", DateTime.UtcNow, ex.Message);
             }
         }
-
+        */
+        private async void OnCallback_(object? sender, CallbackQuery callbackQuery)
+        {
+            try
+            {
+                await ProcessCallback_(sender, callbackQuery);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "{Time}: OnChatMessage - Error {Exception}", DateTime.UtcNow, ex.Message);
+            }
+        }
+        
         private async Task ProcessChatMessage(object? sender, ChatMessageEventArgs chatMessageArgs)
         {
             if (sender is IChatService chatService)
@@ -86,9 +98,19 @@ namespace NextBot
                             );
 
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
                         await chatService.SendMessage(chatMessageArgs.ChatId, "خطایی رخ داده است. لطفا مجددا تلاش کنید.");
+                        _logger.Log(LogLevel.Error, $"{chatMessageArgs.UserId} --> {e} \n, {e.Message} ", DateTime.UtcNow);
+                        try
+                        {
+                            using StreamWriter file = new("log.txt", append: true);
+                            await file.WriteLineAsync($"{chatMessageArgs.UserId} --> {e} \n, {e.Message}");
+                        }
+                        catch (Exception)
+                        {
+                            _logger.Log(LogLevel.Error, $"log cannot append to log.txt", DateTime.UtcNow);
+                        }
                     }
                 }
                 else
@@ -105,7 +127,7 @@ namespace NextBot
                 }
             }
         }
-
+        /*
         private async Task ProcessCallback(object? sender, CallbackQueryEventArgs query)
         {
             var person = _context.People.FirstOrDefault(p => p.ChatId == query.CallbackQuery.Message.Chat.Id);
@@ -149,5 +171,50 @@ namespace NextBot
                 }
             }
         }
+        */
+        private async Task ProcessCallback_(object? sender, CallbackQuery callbackQuery)
+        {
+            var person = _context.People.FirstOrDefault(p => p.ChatId == callbackQuery.Message.Chat.Id);
+
+            if (sender is IChatService chatService)
+            {
+                string commandText = null;
+                if (person.CommandState == 1)
+                    commandText = "/return";
+                else if (person.CommandState == 2)
+                    commandText = "/cportfolio";
+                else if (person.CommandState == 3)
+                    commandText = "/sportfolioset";
+                else if (person.CommandState == 4)
+                    commandText = "/cportfolioset";
+                else if (person.CommandState == 5)
+                    commandText = "/sportfolio";
+
+                var command = _serviceProvider.GetServices<IBotCommand>().SingleOrDefault(x => $"/{x.Command}".Equals(commandText, StringComparison.InvariantCultureIgnoreCase));
+
+                if (command != null && !string.IsNullOrEmpty(commandText))
+                {
+                    try
+                    {
+                        _context = await command.Execute(chatService,
+                            callbackQuery.Message.Chat.Id,
+                            callbackQuery.From.Id,
+                            callbackQuery.Message.MessageId,
+                            callbackQuery.Data?.Replace(commandText, string.Empty).Trim(),
+                            callbackQuery
+                            );
+                    }
+                    catch (Exception)
+                    {
+                        await chatService.SendMessage(callbackQuery.Message.Chat.Id, "خطایی رخ داده است. لطفا مجددا تلاش کنید.");
+                    }
+                }
+                else
+                {
+                    _logger.LogCritical("Invalid callback data was provided: {CallbackData}", callbackQuery);
+                }
+            }
+        }
+        
     }
 }

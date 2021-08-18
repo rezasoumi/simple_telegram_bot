@@ -1,4 +1,5 @@
-﻿using Telegram.Bot.Types.ReplyMarkups;
+﻿using NextBot.Alteranives;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NextBot.Handlers
 {
@@ -46,7 +47,7 @@ namespace NextBot.Handlers
             },
             resizeKeyboard: true
         );
-
+        /*
         public static readonly ReplyKeyboardMarkup SelectTypesRKM = new(
             new KeyboardButton[][]
             {
@@ -55,7 +56,7 @@ namespace NextBot.Handlers
             },
             resizeKeyboard: true
         );
-
+        */
         public static readonly ReplyKeyboardMarkup ReturnPortfolioTypesRKM = new(
             new KeyboardButton[][]
             {
@@ -78,7 +79,9 @@ namespace NextBot.Handlers
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "🔙" },
-                    new KeyboardButton[] { "شاخص", "صندوق سهامی", "پرتفوی" },
+                    new KeyboardButton[] { "مقایسه با شاخص تا تاریخ دلخواه📆", "مقایسه با شاخص تا امروز" },
+                    new KeyboardButton[] { "مقایسه با صندوق سهامی تا تاریخ دلخواه📆", "مقایسه با صندوق سهامی تا امروز" },
+                    new KeyboardButton[] { "مقایسه با پرتفوی تا تاریخ دلخواه📆", "مقایسه با پرتفوی تا امروز" },
             },
             resizeKeyboard: true
         );
@@ -87,7 +90,9 @@ namespace NextBot.Handlers
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "🔙" },
-                    new KeyboardButton[] { "شاخص", "صندوق سهامی", "پرتفوی مرکب" },
+                    new KeyboardButton[] { "مقایسه با شاخص تا تاریخ دلخواه📆", "مقایسه با شاخص تا امروز" },
+                    new KeyboardButton[] { "مقایسه با صندوق سهامی تا تاریخ دلخواه📆", "مقایسه با صندوق سهامی تا امروز" },
+                    new KeyboardButton[] { "مقایسه با پرتفوی مرکب تا تاریخ دلخواه📆", "مقایسه با پرتفوی مرکب تا امروز" },
             },
             resizeKeyboard: true
         );
@@ -118,7 +123,8 @@ namespace NextBot.Handlers
             new KeyboardButton[][]
             {
                     new KeyboardButton[] { "🔙" },
-                    new KeyboardButton[] { "محاسبه بازدهی📈" },
+                    new KeyboardButton[] { "محاسبه بازدهی تا امروز📈" },
+                    new KeyboardButton[] { "محاسبه بازدهی تا تاریخ دلخواه📈" },
             },
             resizeKeyboard: true
         );
